@@ -1,0 +1,39 @@
+# ============================================
+# Shelf Life Estimator — Backend Dependencies
+# ============================================
+# Using latest versions for Python 3.14 compatibility
+
+# --- Core Framework ---
+fastapi
+uvicorn[standard]
+
+# --- Database ---
+sqlalchemy
+alembic
+aiosqlite
+
+# --- Data Validation ---
+pydantic
+pydantic-settings
+python-dotenv
+
+# --- Image Processing ---
+pillow
+python-multipart
+
+# --- Background Jobs ---
+apscheduler
+
+# --- Security ---
+passlib[bcrypt]
+python-jose[cryptography]
+
+# --- CORS ---
+# (included in FastAPI)
+
+# --- Testing ---
+pytest
+httpx
+
+# --- Development ---
+ruff
