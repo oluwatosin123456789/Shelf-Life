@@ -80,15 +80,15 @@ app = FastAPI(
     title=settings.app_name,
     version=settings.app_version,
     description=(
-        "🍎 **Shelf Life Estimator API**\n\n"
-        "Scan food items via camera or manual selection, "
+        "🍎 **Shelf Life Estimator API — Fruits Edition**\n\n"
+        "Scan fruits via camera or manual selection, "
         "get AI-powered freshness assessment and shelf life estimates.\n\n"
         "## Features\n"
-        "- 📸 **Food Scanning** — Upload an image to identify food and assess freshness\n"
-        "- 🔍 **Food Database** — Browse 60+ food items with shelf life data\n"
-        "- 📋 **Inventory Tracking** — Track your food items and their expiry dates\n"
-        "- 🔔 **Expiry Notifications** — Get alerted before food goes bad\n"
-        "- 💡 **Storage Tips** — Learn how to store food properly\n"
+        "- 📸 **Fruit Scanning** — Upload an image to identify fruit and assess freshness\n"
+        "- 🔍 **Fruit Database** — Browse 40+ fruits with shelf life data\n"
+        "- 📋 **Inventory Tracking** — Track your fruits and their expiry dates\n"
+        "- 🔔 **Expiry Notifications** — Get alerted before fruit goes bad\n"
+        "- 💡 **Storage Tips** — Learn how to store fruits properly\n"
     ),
     lifespan=lifespan,
     docs_url="/docs",

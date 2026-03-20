@@ -23,17 +23,13 @@ class StorageMethod(str, Enum):
 
 
 class FoodCategory(str, Enum):
-    """Categories for food classification."""
-    FRUITS = "fruits"
-    VEGETABLES = "vegetables"
-    DAIRY = "dairy"
-    GRAINS = "grains"
-    MEAT = "meat"
-    SEAFOOD = "seafood"
-    BAKERY = "bakery"
-    HERBS = "herbs"
-    LEGUMES = "legumes"
-    ROOTS = "roots"
+    """Subcategories for fruit classification."""
+    COMMON = "common"
+    CITRUS = "citrus"
+    BERRIES = "berries"
+    TROPICAL = "tropical"
+    STONE = "stone"
+    MELONS = "melons"
     OTHER = "other"
 
 
