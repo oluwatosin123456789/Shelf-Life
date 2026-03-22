@@ -38,8 +38,8 @@ class Settings(BaseSettings):
     max_upload_size_mb: int = 10
 
     # --- AI Models ---
-    classifier_model_path: str = "models/food_classifier.h5"
-    freshness_model_path: str = "models/freshness_assessor.h5"
+    classifier_model_path: str = "models/fruit_classifier.h5"
+    freshness_model_path: str = "models/fruit_freshness_assessor.h5"
 
     @property
     def cors_origins(self) -> list[str]:

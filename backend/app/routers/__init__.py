@@ -1,1 +1,1 @@
-"""Shelf Life Estimator — API Routers Package."""
+"""Shelf Life Estimator — API Routers."""

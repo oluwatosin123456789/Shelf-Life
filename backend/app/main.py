@@ -1,7 +1,7 @@
 """
 Shelf Life Estimator — FastAPI Application
 ============================================
-Main entry point for the backend server.
+Main entry point for the Fruit Shelf Life Estimator backend.
 
 Run with:
     uvicorn app.main:app --reload --port 8000
@@ -20,7 +20,7 @@ from app.seed_data import seed_database
 from app.schemas.schemas import HealthResponse
 
 # Import routers
-from app.routers import foods, scan, inventory
+from app.routers import fruits, scan, inventory
 
 settings = get_settings()
 
@@ -36,14 +36,14 @@ async def lifespan(app: FastAPI):
 
     Startup:
         1. Create database tables
-        2. Seed database with food items
+        2. Seed database with 40+ fruits
         3. Create upload directory
 
     Shutdown:
         - Clean up resources
     """
     # --- Startup ---
-    print("🚀 Starting Shelf Life Estimator API...")
+    print("🚀 Starting Fruit Shelf Life Estimator API...")
 
     # Create database tables
     await init_db()
@@ -62,14 +62,14 @@ async def lifespan(app: FastAPI):
     models_dir = Path("models")
     models_dir.mkdir(parents=True, exist_ok=True)
 
-    print("✅ Shelf Life Estimator API is ready!")
+    print("✅ Fruit Shelf Life Estimator API is ready!")
     print(f"📖 API Docs: http://localhost:8000/docs")
     print(f"📖 ReDoc: http://localhost:8000/redoc")
 
     yield  # App is running
 
     # --- Shutdown ---
-    print("👋 Shutting down Shelf Life Estimator API...")
+    print("👋 Shutting down Fruit Shelf Life Estimator API...")
 
 
 # ============================================
@@ -80,7 +80,7 @@ app = FastAPI(
     title=settings.app_name,
     version=settings.app_version,
     description=(
-        "🍎 **Shelf Life Estimator API — Fruits Edition**\n\n"
+        "🍎 **Fruit Shelf Life Estimator API**\n\n"
         "Scan fruits via camera or manual selection, "
         "get AI-powered freshness assessment and shelf life estimates.\n\n"
         "## Features\n"
@@ -89,6 +89,7 @@ app = FastAPI(
         "- 📋 **Inventory Tracking** — Track your fruits and their expiry dates\n"
         "- 🔔 **Expiry Notifications** — Get alerted before fruit goes bad\n"
         "- 💡 **Storage Tips** — Learn how to store fruits properly\n"
+        "- 🧪 **Ethylene Compatibility** — Check which fruits can be stored together\n"
     ),
     lifespan=lifespan,
     docs_url="/docs",
@@ -122,7 +123,7 @@ app.mount("/uploads", StaticFiles(directory=settings.upload_dir), name="uploads"
 # Include Routers
 # ============================================
 
-app.include_router(foods.router)
+app.include_router(fruits.router)
 app.include_router(scan.router)
 app.include_router(inventory.router)
 
@@ -144,9 +145,10 @@ async def root():
         "docs": "/docs",
         "redoc": "/redoc",
         "endpoints": {
+            "fruits": "GET /api/fruits/",
             "scan": "POST /api/scan/",
-            "foods": "GET /api/foods/",
             "inventory": "GET /api/inventory/",
+            "compatibility": "GET /api/fruits/compatibility",
         },
     }
 

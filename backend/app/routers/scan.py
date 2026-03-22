@@ -2,7 +2,7 @@
 Shelf Life Estimator — Scan Router
 ====================================
 Handles image upload, AI classification, freshness assessment,
-and shelf life estimation.
+and shelf life estimation for fruits.
 
 This is the main "brain" endpoint of the application.
 """
@@ -17,11 +17,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings
 from app.database import get_db
-from app.models.schema import FoodItem
+from app.models.schema import Fruit
 from app.schemas.schemas import ScanResultResponse
-from app.ai.classifier import classify_food
+from app.ai.classifier import classify_fruit
 from app.ai.freshness import assess_freshness
-from app.ai.estimator import estimate_shelf_life
+from app.ai.estimator import estimate_shelf_life, recommend_best_storage
 
 settings = get_settings()
 
@@ -31,22 +31,23 @@ router = APIRouter(prefix="/api/scan", tags=["Scan"])
 @router.post(
     "/",
     response_model=ScanResultResponse,
-    summary="Scan a food item",
-    description="Upload an image of food. The AI will identify it, "
+    summary="Scan a fruit",
+    description="Upload an image of a fruit. The AI will identify it, "
     "assess its freshness, and estimate shelf life for all storage methods.",
 )
-async def scan_food(
-    image: UploadFile = File(..., description="Image of the food item to scan"),
+async def scan_fruit(
+    image: UploadFile = File(..., description="Image of the fruit to scan"),
     db: AsyncSession = Depends(get_db),
 ):
     """
     Full scan pipeline:
     1. Save uploaded image
-    2. Classify food (AI Model 1)
+    2. Classify fruit (AI Model 1)
     3. Assess freshness (AI Model 2)
     4. Look up base shelf life from database
-    5. Calculate estimated shelf life
-    6. Return complete results
+    5. Calculate estimated shelf life (weighted multi-factor)
+    6. Generate storage recommendation
+    7. Return complete results
     """
     # --- Validate file type ---
     allowed_types = {"image/jpeg", "image/png", "image/webp", "image/jpg"}
@@ -77,9 +78,9 @@ async def scan_food(
     with open(file_path, "wb") as f:
         f.write(contents)
 
-    # --- Step 1: Classify the food ---
-    classification = await classify_food(str(file_path))
-    food_name = classification["name"]
+    # --- Step 1: Classify the fruit ---
+    classification = await classify_fruit(str(file_path))
+    fruit_name = classification["name"]
     confidence = classification["confidence"]
 
     # --- Step 2: Assess freshness ---
@@ -87,43 +88,49 @@ async def scan_food(
     freshness_score = freshness["score"]
     freshness_label = freshness["label"]
 
-    # --- Step 3: Look up food in database ---
+    # --- Step 3: Look up fruit in database ---
     result = await db.execute(
-        select(FoodItem).where(FoodItem.name.ilike(food_name))
+        select(Fruit).where(Fruit.name.ilike(fruit_name))
     )
-    food_item = result.scalar_one_or_none()
+    fruit = result.scalar_one_or_none()
 
-    if not food_item:
-        # If AI-identified food isn't in our database, try a fuzzy match
+    if not fruit:
+        # If AI-identified fruit isn't in our database, try a fuzzy match
         result = await db.execute(
-            select(FoodItem).where(FoodItem.name.ilike(f"%{food_name}%"))
+            select(Fruit).where(Fruit.name.ilike(f"%{fruit_name}%"))
         )
-        food_item = result.scalar_one_or_none()
+        fruit = result.scalar_one_or_none()
 
-    if not food_item:
+    if not fruit:
         # Still not found — clean up uploaded file and return error
         os.remove(file_path)
         raise HTTPException(
             status_code=404,
-            detail=f"Food '{food_name}' identified by AI but not found in our database. "
+            detail=f"Fruit '{fruit_name}' identified by AI but not found in our database. "
             "Please try manual selection instead.",
         )
 
-    # --- Step 4: Estimate shelf life ---
+    # --- Step 4: Estimate shelf life (upgraded multi-factor formula) ---
     shelf_life = estimate_shelf_life(
-        shelf_life_room_temp=food_item.shelf_life_room_temp_days,
-        shelf_life_fridge=food_item.shelf_life_fridge_days,
-        shelf_life_freezer=food_item.shelf_life_freezer_days,
+        shelf_life_room_temp=fruit.shelf_life_room_temp_days,
+        shelf_life_fridge=fruit.shelf_life_fridge_days,
+        shelf_life_freezer=fruit.shelf_life_freezer_days,
         freshness_score=freshness_score,
+        optimal_temp_min=fruit.optimal_temp_min,
+        optimal_temp_max=fruit.optimal_temp_max,
     )
 
-    # --- Step 5: Return complete results ---
+    # --- Step 5: Generate storage recommendation ---
+    recommendation = recommend_best_storage(shelf_life, current_method="room_temp")
+
+    # --- Step 6: Return complete results ---
     return ScanResultResponse(
-        food_item=food_item,
+        fruit=fruit,
         classification_confidence=confidence,
         freshness_score=freshness_score,
         freshness_label=freshness_label,
         estimated_shelf_life=shelf_life,
-        storage_tips=food_item.storage_tips,
+        recommended_storage=recommendation,
+        storage_tips=fruit.storage_tips,
         image_path=str(file_path),
     )

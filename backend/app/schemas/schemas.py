@@ -16,13 +16,13 @@ from pydantic import BaseModel, ConfigDict, Field
 # ============================================
 
 class StorageMethod(str, Enum):
-    """Valid storage methods for food items."""
+    """Valid storage methods for fruits."""
     ROOM_TEMP = "room_temp"
     FRIDGE = "fridge"
     FREEZER = "freezer"
 
 
-class FoodCategory(str, Enum):
+class FruitSubcategory(str, Enum):
     """Subcategories for fruit classification."""
     COMMON = "common"
     CITRUS = "citrus"
@@ -34,16 +34,24 @@ class FoodCategory(str, Enum):
 
 
 # ============================================
-# Food Item Schemas
+# Fruit Schemas
 # ============================================
 
-class FoodItemBase(BaseModel):
-    """Base schema for food item data."""
+class FruitBase(BaseModel):
+    """Base schema for fruit data."""
     name: str = Field(..., min_length=1, max_length=100, examples=["Banana"])
-    category: str = Field(..., min_length=1, max_length=50, examples=["fruits"])
+    subcategory: str = Field(..., min_length=1, max_length=50, examples=["common"])
     shelf_life_room_temp_days: float = Field(..., ge=0, examples=[5.0])
     shelf_life_fridge_days: float = Field(..., ge=0, examples=[14.0])
     shelf_life_freezer_days: float = Field(..., ge=0, examples=[180.0])
+    is_ethylene_producer: bool = Field(False, examples=[True])
+    is_ethylene_sensitive: bool = Field(False, examples=[True])
+    optimal_temp_min: float | None = Field(None, examples=[13.0])
+    optimal_temp_max: float | None = Field(None, examples=[15.0])
+    ripeness_indicator: str | None = Field(
+        None,
+        examples=["Yellow skin with small brown spots = perfectly ripe"]
+    )
     storage_tips: str | None = Field(
         None,
         examples=["Store at room temperature until ripe, then refrigerate."]
@@ -51,21 +59,21 @@ class FoodItemBase(BaseModel):
     image_url: str | None = None
 
 
-class FoodItemCreate(FoodItemBase):
-    """Schema for creating a new food item."""
+class FruitCreate(FruitBase):
+    """Schema for adding a new fruit to the reference database."""
     pass
 
 
-class FoodItemResponse(FoodItemBase):
-    """Schema for food item in API responses."""
+class FruitResponse(FruitBase):
+    """Schema for fruit in API responses."""
     model_config = ConfigDict(from_attributes=True)
 
     id: int
 
 
-class FoodItemList(BaseModel):
-    """Paginated list of food items."""
-    items: list[FoodItemResponse]
+class FruitList(BaseModel):
+    """Paginated list of fruits."""
+    items: list[FruitResponse]
     total: int
     page: int
     per_page: int
@@ -80,10 +88,10 @@ class ScanResultResponse(BaseModel):
     Response from the /api/scan endpoint.
     Contains everything the frontend needs to display results.
     """
-    food_item: FoodItemResponse
+    fruit: FruitResponse
     classification_confidence: float = Field(
         ..., ge=0.0, le=1.0,
-        description="How confident the AI is about the food identification (0-1)"
+        description="How confident the AI is about the fruit identification (0-1)"
     )
     freshness_score: float = Field(
         ..., ge=0.0, le=1.0,
@@ -99,6 +107,11 @@ class ScanResultResponse(BaseModel):
         description="Estimated days remaining per storage method",
         examples=[{"room_temp": 3.5, "fridge": 10.0, "freezer": 120.0}]
     )
+    recommended_storage: str | None = Field(
+        None,
+        description="Best storage recommendation from the estimator",
+        examples=["Move to fridge — you'll gain 6.5 extra days"]
+    )
     storage_tips: str | None = None
     image_path: str | None = None
 
@@ -108,8 +121,8 @@ class ScanResultResponse(BaseModel):
 # ============================================
 
 class InventoryItemCreate(BaseModel):
-    """Schema for adding an item to the user's inventory."""
-    food_item_id: int = Field(..., gt=0)
+    """Schema for adding a fruit to the user's inventory."""
+    fruit_id: int = Field(..., gt=0)
     freshness_score: float = Field(1.0, ge=0.0, le=1.0)
     storage_method: StorageMethod = StorageMethod.ROOM_TEMP
     quantity: int = Field(1, ge=1)
@@ -131,7 +144,7 @@ class InventoryItemResponse(BaseModel):
 
     id: int
     user_id: int
-    food_item_id: int
+    fruit_id: int
     freshness_score: float
     storage_method: str
     estimated_days_remaining: float
@@ -143,8 +156,8 @@ class InventoryItemResponse(BaseModel):
     quantity: int
     notes: str | None
 
-    # Nested food item details
-    food_item: FoodItemResponse
+    # Nested fruit details
+    fruit: FruitResponse
 
 
 class InventoryListResponse(BaseModel):
@@ -153,6 +166,24 @@ class InventoryListResponse(BaseModel):
     total: int
     expiring_soon: int  # items expiring within 2 days
     expired: int
+
+
+# ============================================
+# Compatibility Schemas (Phase D)
+# ============================================
+
+class CompatibilityPair(BaseModel):
+    """An incompatible fruit pair with explanation."""
+    producer: str
+    sensitive: str
+    warning: str
+
+
+class CompatibilityResponse(BaseModel):
+    """Response from the compatibility check endpoint."""
+    compatible_groups: list[list[str]]
+    incompatible_pairs: list[CompatibilityPair]
+    recommendation: str
 
 
 # ============================================

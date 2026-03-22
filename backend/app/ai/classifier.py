@@ -3,39 +3,52 @@ Shelf Life Estimator — Fruit Classifier (AI Stub)
 ===================================================
 Identifies what fruit is in an image.
 
-Phase 1: Returns mock predictions from a lookup table.
+Phase 1: Returns mock predictions using an O(1) hash map lookup.
 Phase 2: Will use MobileNetV2 transfer learning model trained on Fruits-360.
 """
 
 import random
 from pathlib import Path
 
-# Mock fruit classifications for Phase 1 development
-MOCK_CLASSIFICATIONS = [
-    {"name": "Apple", "confidence": 0.94},
-    {"name": "Banana", "confidence": 0.96},
-    {"name": "Orange", "confidence": 0.91},
-    {"name": "Strawberry", "confidence": 0.92},
-    {"name": "Mango", "confidence": 0.89},
-    {"name": "Grape", "confidence": 0.87},
-    {"name": "Pineapple", "confidence": 0.88},
-    {"name": "Watermelon", "confidence": 0.93},
-    {"name": "Avocado", "confidence": 0.85},
-    {"name": "Peach", "confidence": 0.86},
-    {"name": "Lemon", "confidence": 0.90},
-    {"name": "Blueberry", "confidence": 0.91},
-    {"name": "Kiwi", "confidence": 0.88},
-    {"name": "Papaya", "confidence": 0.84},
-    {"name": "Cherry", "confidence": 0.90},
-    {"name": "Pear", "confidence": 0.87},
-    {"name": "Pomegranate", "confidence": 0.85},
-    {"name": "Dragon Fruit", "confidence": 0.83},
-    {"name": "Guava", "confidence": 0.82},
-    {"name": "Coconut", "confidence": 0.91},
-]
+
+# ============================================
+# DSA: Hash Map for O(1) fruit lookup by name
+# ============================================
+# Instead of looping through a list (O(n) linear search),
+# we use a dictionary (hash map) for instant O(1) lookups.
+#
+# Old approach:  for fruit in list: if name matches → O(n)
+# New approach:  dict[name] → O(1)
+
+MOCK_CLASSIFICATIONS: dict[str, float] = {
+    "apple": 0.94,
+    "banana": 0.96,
+    "orange": 0.91,
+    "strawberry": 0.92,
+    "mango": 0.89,
+    "grape": 0.87,
+    "pineapple": 0.88,
+    "watermelon": 0.93,
+    "avocado": 0.85,
+    "peach": 0.86,
+    "lemon": 0.90,
+    "blueberry": 0.91,
+    "kiwi": 0.88,
+    "papaya": 0.84,
+    "cherry": 0.90,
+    "pear": 0.87,
+    "pomegranate": 0.85,
+    "dragon fruit": 0.83,
+    "guava": 0.82,
+    "coconut": 0.91,
+}
+
+# Pre-computed list of fruit names for random selection
+# Stored once to avoid repeated dict.keys() calls
+_FRUIT_NAMES = list(MOCK_CLASSIFICATIONS.keys())
 
 
-async def classify_food(image_path: str) -> dict:
+async def classify_fruit(image_path: str) -> dict:
     """
     Classify a fruit from an image.
 
@@ -44,8 +57,11 @@ async def classify_food(image_path: str) -> dict:
 
     Returns:
         dict with keys:
-            - name (str): Predicted fruit name
+            - name (str): Predicted fruit name (title-cased)
             - confidence (float): Confidence score 0.0 - 1.0
+
+    DSA: Uses hash map (dict) for O(1) name matching instead of
+         O(n) linear search through a list.
 
     TODO (Phase 2):
         - Load MobileNetV2 model trained on Fruits-360 dataset
@@ -53,19 +69,20 @@ async def classify_food(image_path: str) -> dict:
         - Run inference and return top prediction
     """
     # Phase 1: Return a mock classification
-    # Try to match filename to a known fruit, else pick random
+    # Try to match filename to a known fruit via hash map
     filename = Path(image_path).stem.lower()
 
-    for fruit in MOCK_CLASSIFICATIONS:
-        if fruit["name"].lower() in filename:
+    # O(1) hash map lookup for each known fruit name
+    for fruit_name, confidence in MOCK_CLASSIFICATIONS.items():
+        if fruit_name in filename:
             return {
-                "name": fruit["name"],
-                "confidence": fruit["confidence"],
+                "name": fruit_name.title(),
+                "confidence": confidence,
             }
 
     # Random pick if no filename match
-    fruit = random.choice(MOCK_CLASSIFICATIONS)
+    chosen = random.choice(_FRUIT_NAMES)
     return {
-        "name": fruit["name"],
+        "name": chosen.title(),
         "confidence": round(random.uniform(0.75, 0.95), 2),
     }
