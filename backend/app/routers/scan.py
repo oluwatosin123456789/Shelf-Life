@@ -134,3 +134,6 @@ async def scan_fruit(
         storage_tips=fruit.storage_tips,
         image_path=str(file_path),
     )
+
+
+you can do all things 
