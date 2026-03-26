@@ -1,0 +1,39 @@
+import type { Metadata, Viewport } from "next";
+import { Inter } from "next/font/google";
+import "./globals.css";
+import { BottomNav } from "@/components/ui/BottomNav";
+
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+  weight: ["400", "500", "600", "700"],
+});
+
+export const metadata: Metadata = {
+  title: "Fresco — Know Your Fruit",
+  description: "AI-powered fruit freshness assistant. Scan, estimate shelf life, and store smarter.",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  themeColor: "#18181B",
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html lang="en">
+      <body className={`${inter.variable} font-sans antialiased`}>
+        <main className="mx-auto max-w-[480px] min-h-screen pb-20">
+          {children}
+        </main>
+        <BottomNav />
+      </body>
+    </html>
+  );
+}

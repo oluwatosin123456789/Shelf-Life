@@ -1,0 +1,60 @@
+@import "tailwindcss";
+
+/* ============================================
+   FRESCO MVP — Design System Tokens
+   ============================================ */
+
+:root {
+  /* Brand Palette */
+  --bg: #FAFAF8;
+  --surface: #FFFFFF;
+  --text: #1A1A1A;
+  --text-muted: #71717A;
+  --border: #E4E4E7;
+  --accent: #18181B;
+
+  /* Functional Status Colors */
+  --safe: #16A34A;
+  --warning: #D97706;
+  --danger: #DC2626;
+
+  /* Spacing scale (4px base) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+  --color-safe: var(--safe);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+}
+
+/* Global resets */
+body {
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Minimum tap target for accessibility */
+button, a, [role="button"] {
+  min-height: 48px;
+}
+
+/* Safe area for notched phones */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}

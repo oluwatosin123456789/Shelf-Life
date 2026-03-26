@@ -83,37 +83,85 @@ class FruitList(BaseModel):
 # Scan Schemas
 # ============================================
 
-class ScanResultResponse(BaseModel):
+
+class ScanResponse(BaseModel):
     """
-    Response from the /api/scan endpoint.
-    Contains everything the frontend needs to display results.
+    Unified response from the /api/scan endpoint.
+
+    This is the strict output contract. The frontend should be able
+    to render this directly without any transformation.
+
+    Contains three tiers of data:
+        1. Decision (status, confidence, recommendation) — the BIG answer
+        2. Details (freshness, shelf life, storage) — supporting data
+        3. Context (ethylene, compatibility) — environmental intelligence
     """
+
+    # --- Tier 1: The Decision (what the user sees FIRST) ---
+    status: str = Field(
+        ...,
+        description="Overall verdict: FRESH, EAT_SOON, EAT_TODAY, or SPOILED",
+        examples=["FRESH", "EAT_SOON", "EAT_TODAY", "SPOILED"],
+    )
+    confidence: float = Field(
+        ..., ge=0.0, le=1.0,
+        description="Composite confidence score from weighted signal fusion (0-1)",
+    )
+    days_left: float = Field(
+        ..., ge=0.0,
+        description="Estimated days remaining at current/recommended storage",
+    )
+    recommendation: str = Field(
+        ...,
+        description="Human-readable, actionable recommendation",
+        examples=["Your Banana is in great condition. Store in the fridge for up to 7 days."],
+    )
+
+    # --- Tier 2: Detailed Data (for frontend charts and visuals) ---
     fruit: FruitResponse
     classification_confidence: float = Field(
         ..., ge=0.0, le=1.0,
-        description="How confident the AI is about the fruit identification (0-1)"
+        description="How confident the AI classifier is about the fruit identification",
     )
     freshness_score: float = Field(
         ..., ge=0.0, le=1.0,
-        description="Visual freshness assessment (0 = spoiled, 1 = perfectly fresh)"
+        description="Visual freshness assessment (0 = spoiled, 1 = perfectly fresh)",
     )
     freshness_label: str = Field(
         ...,
         description="Human-readable freshness label",
-        examples=["Fresh", "Slightly Aged", "Aging", "Spoiled"]
+        examples=["Fresh", "Slightly Aged", "Aging", "Spoiled"],
     )
     estimated_shelf_life: dict[str, float] = Field(
         ...,
         description="Estimated days remaining per storage method",
-        examples=[{"room_temp": 3.5, "fridge": 10.0, "freezer": 120.0}]
+        examples=[{"room_temp": 3.5, "fridge": 10.0, "freezer": 120.0}],
     )
-    recommended_storage: str | None = Field(
+    best_storage: str = Field(
+        ...,
+        description="Recommended storage method (room_temp, fridge, or freezer)",
+        examples=["fridge"],
+    )
+    storage_tip: str = Field(
+        "",
+        description="Domain-specific storage advice for this fruit",
+    )
+
+    # --- Tier 3: Environmental Intelligence ---
+    ethylene_note: str | None = Field(
         None,
-        description="Best storage recommendation from the estimator",
-        examples=["Move to fridge — you'll gain 6.5 extra days"]
+        description="Note about this fruit's ethylene behavior",
+        examples=["Banana both produces and is sensitive to ethylene gas."],
     )
-    storage_tips: str | None = None
+    compatibility_warnings: list[dict] = Field(
+        default_factory=list,
+        description="Ethylene conflict warnings if this fruit is stored with common companions",
+    )
+
+    # --- Metadata ---
     image_path: str | None = None
+
+
 
 
 # ============================================
