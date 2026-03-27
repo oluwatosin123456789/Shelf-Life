@@ -20,7 +20,7 @@ from app.seed_data import seed_database
 from app.schemas.schemas import HealthResponse
 
 # Import routers
-from app.routers import fruits, scan, inventory
+from app.routers import fruits, scan, inventory, auth
 
 settings = get_settings()
 
@@ -123,6 +123,7 @@ app.mount("/uploads", StaticFiles(directory=settings.upload_dir), name="uploads"
 # Include Routers
 # ============================================
 
+app.include_router(auth.router)
 app.include_router(fruits.router)
 app.include_router(scan.router)
 app.include_router(inventory.router)

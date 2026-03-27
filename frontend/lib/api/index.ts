@@ -8,6 +8,46 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 // ============================================
+// Token Management (localStorage)
+// ============================================
+
+const TOKEN_KEY = "fresco_token";
+const USER_KEY = "fresco_user";
+
+export function getToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem(TOKEN_KEY);
+}
+
+export function setToken(token: string): void {
+  localStorage.setItem(TOKEN_KEY, token);
+  // Also set a cookie so the Next.js middleware can check auth
+  document.cookie = `fresco_auth=${token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
+}
+
+export function clearToken(): void {
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(USER_KEY);
+  // Clear the auth cookie
+  document.cookie = "fresco_auth=; path=/; max-age=0";
+}
+
+export function getStoredUser(): AuthUser | null {
+  if (typeof window === "undefined") return null;
+  const stored = localStorage.getItem(USER_KEY);
+  return stored ? JSON.parse(stored) : null;
+}
+
+export function setStoredUser(user: AuthUser): void {
+  localStorage.setItem(USER_KEY, JSON.stringify(user));
+}
+
+function authHeaders(): Record<string, string> {
+  const token = getToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+// ============================================
 // Error Handling
 // ============================================
 
@@ -31,6 +71,45 @@ async function handleResponse<T>(res: Response): Promise<T> {
 }
 
 // ============================================
+// Auth API
+// ============================================
+
+export async function register(
+  username: string,
+  email: string,
+  password: string,
+): Promise<AuthResponse> {
+  const res = await fetch(`${API_BASE}/api/auth/register`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, email, password }),
+  });
+  const data = await handleResponse<AuthResponse>(res);
+  setToken(data.access_token);
+  setStoredUser(data.user);
+  return data;
+}
+
+export async function login(
+  email: string,
+  password: string,
+): Promise<AuthResponse> {
+  const res = await fetch(`${API_BASE}/api/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+  });
+  const data = await handleResponse<AuthResponse>(res);
+  setToken(data.access_token);
+  setStoredUser(data.user);
+  return data;
+}
+
+export function logout(): void {
+  clearToken();
+}
+
+// ============================================
 // Scan API
 // ============================================
 
@@ -40,6 +119,7 @@ export async function scanFruit(file: File): Promise<ScanResult> {
 
   const res = await fetch(`${API_BASE}/api/scan/`, {
     method: "POST",
+    headers: { ...authHeaders() },
     body: formData,
   });
 
@@ -66,7 +146,8 @@ export async function getInventory(
   includeExpired: boolean = true,
 ): Promise<InventoryListResponse> {
   const res = await fetch(
-    `${API_BASE}/api/inventory/?sort_by=${sortBy}&include_expired=${includeExpired}`
+    `${API_BASE}/api/inventory/?sort_by=${sortBy}&include_expired=${includeExpired}`,
+    { headers: { ...authHeaders() } },
   );
   return handleResponse<InventoryListResponse>(res);
 }
@@ -78,7 +159,7 @@ export async function addToInventory(
 ): Promise<InventoryItemResponse> {
   const res = await fetch(`${API_BASE}/api/inventory/`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify({
       fruit_id: fruitId,
       freshness_score: freshnessScore,
@@ -91,6 +172,7 @@ export async function addToInventory(
 export async function deleteInventoryItem(id: number): Promise<void> {
   const res = await fetch(`${API_BASE}/api/inventory/${id}`, {
     method: "DELETE",
+    headers: { ...authHeaders() },
   });
   if (!res.ok) {
     const body = await res.json().catch(() => ({ detail: "Delete failed" }));
@@ -112,6 +194,20 @@ export async function checkCompatibility(fruits: string[]): Promise<Compatibilit
 // ============================================
 // Types (matched to backend Pydantic schemas)
 // ============================================
+
+/** Matches backend UserPublic */
+export interface AuthUser {
+  id: number;
+  username: string;
+  email: string;
+}
+
+/** Matches backend TokenResponse */
+export interface AuthResponse {
+  access_token: string;
+  token_type: string;
+  user: AuthUser;
+}
 
 /** Matches backend FruitResponse */
 export interface FruitData {

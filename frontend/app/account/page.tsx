@@ -1,46 +1,79 @@
 "use client";
 
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { useAuth } from "@/lib/auth-context";
 
 export default function AccountPage() {
+  const router = useRouter();
+  const { user, logout, isAuthenticated } = useAuth();
+
+  const handleLogout = () => {
+    logout();
+    router.push("/auth/signin");
+  };
+
+  if (!isAuthenticated) {
+    return (
+      <div className="flex flex-col justify-center items-center min-h-[60vh] px-4">
+        <p className="text-text-muted mb-4">You&apos;re not signed in.</p>
+        <Button onClick={() => router.push("/auth/signin")}>Sign In</Button>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col px-4 pt-4 pb-24">
       <h1 className="text-2xl font-bold mb-6">Account</h1>
 
-      {/* Profile card */}
-      <div className="flex items-center gap-4 p-4 bg-surface border border-border rounded-xl mb-6">
-        <div className="w-12 h-12 rounded-full bg-accent text-white flex items-center justify-center text-lg font-bold">
-          U
+      {/* User Info */}
+      <Card>
+        <div className="flex items-center gap-4">
+          <div className="w-14 h-14 rounded-full bg-accent flex items-center justify-center text-white text-xl font-bold">
+            {user?.username?.charAt(0).toUpperCase() || "U"}
+          </div>
+          <div>
+            <p className="text-lg font-semibold">{user?.username}</p>
+            <p className="text-sm text-text-muted">{user?.email}</p>
+          </div>
         </div>
-        <div>
-          <p className="font-semibold">User</p>
-          <p className="text-sm text-text-muted">user@fresco.app</p>
-        </div>
+      </Card>
+
+      {/* Settings */}
+      <div className="mt-6 flex flex-col gap-3">
+        <Card>
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium">Notifications</span>
+            <span className="text-xs text-text-muted">Coming soon</span>
+          </div>
+        </Card>
+
+        <Card>
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium">Storage Preferences</span>
+            <span className="text-xs text-text-muted">Coming soon</span>
+          </div>
+        </Card>
+
+        <Card>
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium">About Fresco</span>
+            <span className="text-xs text-text-muted">v1.0.0</span>
+          </div>
+        </Card>
       </div>
 
-      {/* Settings links */}
-      <div className="flex flex-col gap-2 mb-8">
-        {[
-          { label: "Edit Profile", href: "#" },
-          { label: "Notification Settings", href: "#" },
-          { label: "Help & Support", href: "#" },
-          { label: "About Fresco", href: "#" },
-        ].map((item) => (
-          <Link
-            key={item.label}
-            href={item.href}
-            className="flex items-center justify-between py-3 px-4 bg-surface border border-border rounded-xl text-sm font-medium hover:bg-bg transition-colors"
-          >
-            {item.label}
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-          </Link>
-        ))}
+      {/* Logout */}
+      <div className="mt-8">
+        <Button
+          variant="secondary"
+          fullWidth
+          onClick={handleLogout}
+        >
+          Sign Out
+        </Button>
       </div>
-
-      <Button variant="secondary" fullWidth>
-        Sign Out
-      </Button>
     </div>
   );
 }

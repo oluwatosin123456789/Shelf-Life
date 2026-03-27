@@ -22,12 +22,10 @@ from app.schemas.schemas import (
     MessageResponse,
 )
 from app.ai.estimator import estimate_shelf_life, get_days_for_method
+from app.auth import get_current_user
+from app.models.schema import User as UserModel
 
 router = APIRouter(prefix="/api/inventory", tags=["Inventory"])
-
-# Hardcoded user_id for Phase 1 (single-user mode)
-# Will be replaced with actual auth in Phase 4
-DEFAULT_USER_ID = 1
 
 
 @router.get(
@@ -41,12 +39,13 @@ async def get_inventory(
     include_expired: bool = Query(True, description="Include expired items"),
     sort_by: str = Query("expiry", description="Sort by: expiry, name, freshness, added"),
     db: AsyncSession = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user),
 ):
     """Get the user's full fruit inventory with summary stats."""
     query = (
         select(UserInventory)
         .options(selectinload(UserInventory.fruit))
-        .where(UserInventory.user_id == DEFAULT_USER_ID)
+        .where(UserInventory.user_id == current_user.id)
     )
 
     if not include_consumed:
@@ -68,7 +67,7 @@ async def get_inventory(
     items = result.scalars().all()
 
     # Calculate summary stats
-    now = datetime.now(timezone.utc)
+    now = datetime.utcnow()
     two_days_later = now + timedelta(days=2)
 
     total = len(items)
@@ -97,6 +96,7 @@ async def get_inventory(
 async def add_to_inventory(
     item: InventoryItemCreate,
     db: AsyncSession = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user),
 ):
     """Add a scanned/selected fruit to the user's inventory."""
     # Verify the fruit exists
@@ -122,12 +122,12 @@ async def add_to_inventory(
     )
     days_remaining = get_days_for_method(shelf_life, item.storage_method.value)
 
-    now = datetime.now(timezone.utc)
+    now = datetime.utcnow()
     estimated_expiry = now + timedelta(days=days_remaining)
 
     # Create inventory item
     inventory_item = UserInventory(
-        user_id=DEFAULT_USER_ID,
+        user_id=current_user.id,
         fruit_id=item.fruit_id,
         freshness_score=item.freshness_score,
         storage_method=item.storage_method.value,
@@ -173,14 +173,18 @@ async def add_to_inventory(
     response_model=InventoryItemResponse,
     summary="Get inventory item details",
 )
-async def get_inventory_item(item_id: int, db: AsyncSession = Depends(get_db)):
+async def get_inventory_item(
+    item_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user),
+):
     """Get detailed information about a specific inventory item."""
     result = await db.execute(
         select(UserInventory)
         .options(selectinload(UserInventory.fruit))
         .where(
             UserInventory.id == item_id,
-            UserInventory.user_id == DEFAULT_USER_ID,
+            UserInventory.user_id == current_user.id,
         )
     )
     item = result.scalar_one_or_none()
@@ -200,6 +204,7 @@ async def update_inventory_item(
     item_id: int,
     update: InventoryItemUpdate,
     db: AsyncSession = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user),
 ):
     """Update an inventory item (storage method, mark consumed, etc.)."""
     result = await db.execute(
@@ -207,7 +212,7 @@ async def update_inventory_item(
         .options(selectinload(UserInventory.fruit))
         .where(
             UserInventory.id == item_id,
-            UserInventory.user_id == DEFAULT_USER_ID,
+            UserInventory.user_id == current_user.id,
         )
     )
     item = result.scalar_one_or_none()
@@ -253,14 +258,18 @@ async def update_inventory_item(
     response_model=MessageResponse,
     summary="Remove from inventory",
 )
-async def delete_inventory_item(item_id: int, db: AsyncSession = Depends(get_db)):
+async def delete_inventory_item(
+    item_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user),
+):
     """Remove a fruit from the user's inventory."""
     result = await db.execute(
         select(UserInventory)
         .options(selectinload(UserInventory.fruit))
         .where(
             UserInventory.id == item_id,
-            UserInventory.user_id == DEFAULT_USER_ID,
+            UserInventory.user_id == current_user.id,
         )
     )
     item = result.scalar_one_or_none()

@@ -264,3 +264,48 @@ class MessageResponse(BaseModel):
     """Generic message response."""
     message: str
     success: bool = True
+
+
+# ============================================
+# Auth Schemas
+# ============================================
+
+class UserRegister(BaseModel):
+    """Schema for user registration."""
+    username: str = Field(
+        ..., min_length=3, max_length=50,
+        pattern=r"^[a-zA-Z0-9_]+$",
+        description="Alphanumeric username (3-50 chars)",
+        examples=["john_doe"],
+    )
+    email: str = Field(
+        ..., min_length=5, max_length=255,
+        description="Valid email address",
+        examples=["john@example.com"],
+    )
+    password: str = Field(
+        ..., min_length=6, max_length=128,
+        description="Password (min 6 characters)",
+    )
+
+
+class UserLogin(BaseModel):
+    """Schema for user login."""
+    email: str = Field(..., examples=["john@example.com"])
+    password: str = Field(...)
+
+
+class UserPublic(BaseModel):
+    """Safe user data for API responses (no password)."""
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    username: str
+    email: str
+
+
+class TokenResponse(BaseModel):
+    """Response returned on successful login/register."""
+    access_token: str
+    token_type: str = "bearer"
+    user: UserPublic
