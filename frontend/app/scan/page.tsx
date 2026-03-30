@@ -68,6 +68,7 @@ export default function ScanPage() {
           </div>
           <p className="text-base font-medium text-text">Analyzing your fruit…</p>
           <p className="text-xs text-text-muted">This takes a few seconds</p>
+                    <p className="text-xs text-text-muted">This takes a few seconds</p>
         </div>
       )}
     </div>
