@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { CameraView, ScanButton, StorageSelector } from "@/components/scan";
+import { CameraView } from "@/components/scan/CameraView";
+import { StorageSelector } from "@/components/scan/StorageSelector";
 import { scanFruit, ApiError } from "@/lib/api";
 
 export default function ScanPage() {
@@ -17,7 +18,6 @@ export default function ScanPage() {
 
     try {
       const result = await scanFruit(file);
-      // Store result in sessionStorage for the results page
       sessionStorage.setItem("scanResult", JSON.stringify(result));
       sessionStorage.setItem("scanStorage", storage);
       router.push("/results");
@@ -31,25 +31,17 @@ export default function ScanPage() {
     }
   };
 
-  const handleScan = () => {
-    const input = document.querySelector<HTMLInputElement>('input[type="file"]');
-    input?.click();
-  };
-
   return (
-    <div className="flex flex-col px-4 pt-4 pb-8">
+    <div className="flex flex-col px-4 pt-4 pb-24 relative">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-lg font-semibold">fresco</h1>
-        <div className="w-8 h-8 rounded-full bg-border flex items-center justify-center text-xs font-medium">
-          U
-        </div>
       </div>
 
-      {/* Camera */}
-      <CameraView onCapture={handleCapture} />
+      {/* Camera / Upload (two-step: capture → confirm) */}
+      <CameraView onCapture={handleCapture} disabled={scanning} />
 
-      {/* Error message (inline, not toast) */}
+      {/* Error */}
       {error && (
         <div className="mt-3 p-3 bg-danger/10 border border-danger/20 rounded-xl">
           <p className="text-sm text-danger">{error}</p>
@@ -62,25 +54,20 @@ export default function ScanPage() {
         </div>
       )}
 
-      {/* Manual select */}
-      <p className="text-center text-sm text-text-muted mt-4 mb-6">
-        Or select manually
-      </p>
-
       {/* Storage selector */}
-      <div className="mb-6">
+      <div className="mt-5">
+        <p className="text-xs text-text-muted mb-2">Where will you store it?</p>
         <StorageSelector selected={storage} onChange={setStorage} />
       </div>
 
-      {/* Scan button */}
-      <div className="flex justify-center">
-        <ScanButton onScan={handleScan} loading={scanning} />
-      </div>
-
-      {/* Scanning overlay */}
+      {/* Full-screen scanning overlay */}
       {scanning && (
-        <div className="text-center mt-4">
-          <p className="text-sm text-text-muted animate-pulse">Analyzing...</p>
+        <div className="fixed inset-0 bg-bg/90 backdrop-blur-sm z-50 flex flex-col items-center justify-center gap-4">
+          <div className="relative">
+            <span className="block h-12 w-12 rounded-full border-[3px] border-accent border-t-transparent animate-spin" />
+          </div>
+          <p className="text-base font-medium text-text">Analyzing your fruit…</p>
+          <p className="text-xs text-text-muted">This takes a few seconds</p>
         </div>
       )}
     </div>

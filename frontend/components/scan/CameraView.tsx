@@ -3,9 +3,7 @@
 import { useRef, useState, useEffect, useCallback } from "react";
 
 interface CameraViewProps {
-  /** Called when the user captures or selects an image */
   onCapture: (file: File) => void;
-  /** If true, disable controls (scanning in progress) */
   disabled?: boolean;
 }
 
@@ -40,16 +38,18 @@ export function CameraView({ onCapture, disabled = false }: CameraViewProps) {
 
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
+        // Use both events for maximum reliability
+        const markReady = () => setCameraReady(true);
         videoRef.current.onloadedmetadata = () => {
-          videoRef.current?.play();
-          setCameraReady(true);
+          videoRef.current?.play().then(markReady).catch(markReady);
         };
+        videoRef.current.onplaying = markReady;
       }
     } catch (err: unknown) {
       const msg =
         err instanceof DOMException && err.name === "NotAllowedError"
-          ? "Camera permission denied. Use 'Upload' instead."
-          : "Camera not available. Use 'Upload' instead.";
+          ? "Camera permission denied."
+          : "Camera not available on this device.";
       setCameraError(msg);
       setMode("upload");
     }
@@ -63,7 +63,6 @@ export function CameraView({ onCapture, disabled = false }: CameraViewProps) {
     setCameraReady(false);
   }, []);
 
-  // Auto-start/stop when mode changes
   useEffect(() => {
     if (mode === "camera" && !preview) {
       startCamera();
@@ -85,7 +84,6 @@ export function CameraView({ onCapture, disabled = false }: CameraViewProps) {
     canvas.height = video.videoHeight;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-
     ctx.drawImage(video, 0, 0);
 
     canvas.toBlob(
@@ -102,7 +100,7 @@ export function CameraView({ onCapture, disabled = false }: CameraViewProps) {
   };
 
   // --------------------------------------------------
-  // File upload handler
+  // File upload
   // --------------------------------------------------
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -112,22 +110,16 @@ export function CameraView({ onCapture, disabled = false }: CameraViewProps) {
   };
 
   // --------------------------------------------------
-  // Confirm (sends file to parent)
+  // Confirm / Retake
   // --------------------------------------------------
   const confirmCapture = () => {
-    if (capturedFile) {
-      onCapture(capturedFile);
-    }
+    if (capturedFile) onCapture(capturedFile);
   };
 
-  // --------------------------------------------------
-  // Retake / reset
-  // --------------------------------------------------
   const retake = () => {
     setPreview(null);
     setCapturedFile(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
-    if (mode === "camera") startCamera();
   };
 
   // --------------------------------------------------
@@ -135,6 +127,28 @@ export function CameraView({ onCapture, disabled = false }: CameraViewProps) {
   // --------------------------------------------------
   return (
     <div className="flex flex-col gap-3">
+      {/* Mode toggle (above viewfinder) */}
+      <div className="flex bg-surface rounded-xl p-1 gap-1 self-start">
+        <button
+          onClick={() => { if (!disabled) { retake(); setMode("camera"); } }}
+          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors min-h-0 ${
+            mode === "camera" ? "bg-accent text-white" : "text-text-muted hover:text-text"
+          }`}
+          disabled={disabled}
+        >
+          📷 Camera
+        </button>
+        <button
+          onClick={() => { if (!disabled) { retake(); setMode("upload"); } }}
+          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors min-h-0 ${
+            mode === "upload" ? "bg-accent text-white" : "text-text-muted hover:text-text"
+          }`}
+          disabled={disabled}
+        >
+          📁 Upload
+        </button>
+      </div>
+
       {/* -------- Viewfinder -------- */}
       <div className="relative w-full aspect-[4/3] bg-zinc-900 rounded-2xl overflow-hidden flex items-center justify-center">
         {/* Corner brackets */}
@@ -143,13 +157,13 @@ export function CameraView({ onCapture, disabled = false }: CameraViewProps) {
         <div className="absolute bottom-4 left-4 w-6 h-6 border-b-2 border-l-2 border-white/40 rounded-bl z-10" />
         <div className="absolute bottom-4 right-4 w-6 h-6 border-b-2 border-r-2 border-white/40 rounded-br z-10" />
 
-        {/* Captured preview */}
+        {/* ===== Captured preview ===== */}
         {preview && (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={preview} alt="Captured" className="absolute inset-0 w-full h-full object-cover" />
         )}
 
-        {/* Live camera feed */}
+        {/* ===== Live camera feed ===== */}
         {!preview && mode === "camera" && (
           <>
             <video
@@ -157,24 +171,39 @@ export function CameraView({ onCapture, disabled = false }: CameraViewProps) {
               autoPlay
               playsInline
               muted
-              className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${cameraReady ? "opacity-100" : "opacity-0"}`}
+              className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${
+                cameraReady ? "opacity-100" : "opacity-0"
+              }`}
             />
+
+            {/* Loading spinner */}
             {!cameraReady && !cameraError && (
               <div className="flex flex-col items-center gap-2 text-white/60">
                 <span className="h-6 w-6 rounded-full border-2 border-white/40 border-t-transparent animate-spin" />
                 <span className="text-xs">Starting camera…</span>
               </div>
             )}
+
+            {/* ★ BIG SHUTTER BUTTON — centered at bottom of viewfinder ★ */}
+            {cameraReady && !disabled && (
+              <button
+                onClick={captureFrame}
+                className="absolute bottom-5 left-1/2 -translate-x-1/2 z-20 w-16 h-16 rounded-full border-4 border-white flex items-center justify-center active:scale-90 transition-transform min-h-0"
+                aria-label="Capture photo"
+              >
+                <div className="w-12 h-12 rounded-full bg-white" />
+              </button>
+            )}
           </>
         )}
 
-        {/* Upload prompt */}
+        {/* ===== Upload prompt ===== */}
         {!preview && mode === "upload" && (
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="flex flex-col items-center gap-2 text-white/70 min-h-0 p-4"
+            className="flex flex-col items-center gap-3 text-white/70 min-h-0 p-6"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
               <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
               <circle cx="8.5" cy="8.5" r="1.5"/>
               <polyline points="21 15 16 10 5 21"/>
@@ -188,71 +217,30 @@ export function CameraView({ onCapture, disabled = false }: CameraViewProps) {
           ref={fileInputRef}
           type="file"
           accept="image/jpeg,image/png,image/webp"
-          capture="environment"
           onChange={handleFileChange}
           className="hidden"
         />
 
-        {/* Off-screen canvas for frame capture */}
+        {/* Off-screen canvas */}
         <canvas ref={canvasRef} className="hidden" />
       </div>
 
-      {/* -------- Controls -------- */}
-      <div className="flex items-center justify-between">
-        {/* Mode toggle */}
-        <div className="flex bg-surface rounded-xl p-1 gap-1">
-          <button
-            onClick={() => { if (!disabled) { setPreview(null); setCapturedFile(null); setMode("camera"); } }}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors min-h-0 ${
-              mode === "camera" ? "bg-accent text-white" : "text-text-muted hover:text-text"
-            }`}
-            disabled={disabled}
-          >
-            📷 Camera
-          </button>
-          <button
-            onClick={() => { if (!disabled) { setPreview(null); setCapturedFile(null); setMode("upload"); } }}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors min-h-0 ${
-              mode === "upload" ? "bg-accent text-white" : "text-text-muted hover:text-text"
-            }`}
-            disabled={disabled}
-          >
-            📁 Upload
-          </button>
-        </div>
-
-        {/* Action buttons */}
-        <div className="flex items-center gap-2">
-          {preview && !disabled && (
-            <button
-              onClick={retake}
-              className="px-4 py-1.5 rounded-xl bg-surface text-xs font-medium text-text-muted hover:text-text transition-colors min-h-0"
-            >
-              Retake
-            </button>
-          )}
-
-          {/* Shutter button — only when camera is live and no preview */}
-          {!preview && mode === "camera" && cameraReady && !disabled && (
-            <button
-              onClick={captureFrame}
-              className="w-14 h-14 rounded-full border-[3px] border-white bg-white/20 hover:bg-white/40 active:scale-90 transition-all min-h-0 flex items-center justify-center"
-              aria-label="Capture photo"
-            >
-              <div className="w-10 h-10 rounded-full bg-white/90" />
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* -------- Scan / Confirm button -------- */}
+      {/* -------- After capture: Retake + Scan buttons -------- */}
       {preview && capturedFile && !disabled && (
-        <button
-          onClick={confirmCapture}
-          className="w-full py-3 rounded-2xl bg-accent text-white font-semibold text-sm hover:bg-accent/90 active:scale-[0.98] transition-all min-h-0"
-        >
-          🔍 Scan This Fruit
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={retake}
+            className="flex-1 py-3 rounded-2xl bg-surface text-text font-medium text-sm hover:bg-surface/80 transition-colors min-h-0"
+          >
+            ↩ Retake
+          </button>
+          <button
+            onClick={confirmCapture}
+            className="flex-[2] py-3 rounded-2xl bg-accent text-white font-semibold text-sm hover:bg-accent/90 active:scale-[0.98] transition-all min-h-0"
+          >
+            🔍 Scan This Fruit
+          </button>
+        </div>
       )}
 
       {/* Camera error */}
