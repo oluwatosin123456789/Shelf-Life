@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { ErrorState } from "@/components/ui/ErrorState";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { checkCompatibility, getFruits, ApiError, type CompatibilityResult, type FruitData } from "@/lib/api";
-import { useEffect } from "react";
 
 export default function StoragePage() {
   const [allFruits, setAllFruits] = useState<FruitData[]>([]);
@@ -13,15 +14,20 @@ export default function StoragePage() {
   const [result, setResult] = useState<CompatibilityResult | null>(null);
   const [checking, setChecking] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fruitsLoading, setFruitsLoading] = useState(true);
+  const [fruitsError, setFruitsError] = useState<string | null>(null);
 
-  // Fetch fruit list on mount for the search dropdown
-  useEffect(() => {
+  const fetchFruits = () => {
+    setFruitsLoading(true);
+    setFruitsError(null);
     getFruits(1, 100)
       .then((data) => setAllFruits(data.items))
-      .catch(() => {
-        // Fallback: hardcoded list if API fails
-        setAllFruits([]);
-      });
+      .catch(() => setFruitsError("Can't load fruit list. Check your connection."))
+      .finally(() => setFruitsLoading(false));
+  };
+
+  useEffect(() => {
+    fetchFruits();
   }, []);
 
   const fruitNames = allFruits.map((f) => f.name);
@@ -119,10 +125,17 @@ export default function StoragePage() {
         {checking ? "Checking..." : "Check Compatibility"}
       </Button>
 
-      {/* Error */}
+      {/* Fruits load error */}
+      {fruitsError && (
+        <div className="mb-4">
+          <ErrorState message={fruitsError} onRetry={fetchFruits} compact />
+        </div>
+      )}
+
+      {/* Compatibility error */}
       {error && (
-        <div className="mt-4 p-3 bg-danger/10 border border-danger/20 rounded-xl">
-          <p className="text-sm text-danger">{error}</p>
+        <div className="mt-4">
+          <ErrorState message={error} onRetry={handleCheck} compact />
         </div>
       )}
 

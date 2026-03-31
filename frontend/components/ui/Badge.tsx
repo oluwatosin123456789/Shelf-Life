@@ -7,15 +7,15 @@ interface BadgeProps {
 }
 
 const statusStyles: Record<Status, string> = {
-  fresh: "bg-safe text-white",
-  warning: "bg-warning text-white",
-  spoiled: "bg-danger text-white",
-  info: "bg-border text-text",
+  fresh: "bg-safe/10 text-safe border border-safe/20",
+  warning: "bg-warning/10 text-warning border border-warning/20",
+  spoiled: "bg-danger/10 text-danger border border-danger/20",
+  info: "bg-border/50 text-text border border-border",
 };
 
 const sizeStyles = {
   sm: "text-xs px-2.5 py-1 font-medium",
-  lg: "text-xl px-6 py-2 font-bold uppercase tracking-wide",
+  lg: "text-sm px-5 py-2 font-bold uppercase tracking-wider",
 };
 
 export function Badge({ status, label, size = "sm" }: BadgeProps) {

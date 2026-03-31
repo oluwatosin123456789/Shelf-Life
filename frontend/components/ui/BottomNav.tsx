@@ -41,7 +41,7 @@ export function BottomNav() {
   if (pathname?.startsWith("/auth")) return null;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-surface border-t border-border safe-bottom">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-surface/95 backdrop-blur-md border-t border-border shadow-[0_-1px_8px_rgba(0,0,0,0.04)] safe-bottom">
       <div className="mx-auto max-w-[480px] flex items-center justify-around h-14">
         {tabs.map((tab) => {
           const isActive = pathname === tab.href || pathname?.startsWith(tab.href + "/");

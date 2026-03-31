@@ -3,6 +3,8 @@
 import { useEffect, useState, useCallback } from "react";
 import { InventoryList, FloatingAddButton, type InventoryItemData } from "@/components/inventory";
 import { getInventory, deleteInventoryItem, ApiError, type InventoryListResponse } from "@/lib/api";
+import { ErrorState } from "@/components/ui/ErrorState";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 type FilterTab = "all" | "eat_first" | "fresh" | "expired";
 
@@ -43,7 +45,6 @@ export default function InventoryPage() {
       setError(null);
       const data: InventoryListResponse = await getInventory();
 
-      // Transform backend InventoryItemResponse → frontend InventoryItemData
       const mapped: InventoryItemData[] = data.items.map((item) => ({
         id: item.id,
         fruitName: item.fruit.name,
@@ -61,9 +62,13 @@ export default function InventoryPage() {
       });
     } catch (err) {
       if (err instanceof ApiError) {
-        setError(err.detail);
+        if (err.status === 0 || err.detail.includes("fetch")) {
+          setError("Can't reach the server. Check your connection and try again.");
+        } else {
+          setError(err.detail);
+        }
       } else {
-        setError("Failed to load inventory. Please try again.");
+        setError("Can't reach the server. Check your connection and try again.");
       }
     } finally {
       setLoading(false);
@@ -77,10 +82,9 @@ export default function InventoryPage() {
   const handleDelete = async (id: number) => {
     try {
       await deleteInventoryItem(id);
-      // Remove from local state immediately (optimistic update)
       setItems((prev) => prev.filter((i) => i.id !== id));
+      setStats((prev) => ({ ...prev, total: prev.total - 1 }));
     } catch {
-      // Refetch on failure
       fetchInventory();
     }
   };
@@ -97,62 +101,84 @@ export default function InventoryPage() {
       </div>
 
       {/* Summary strip */}
-      <div className="flex gap-2 mb-5 overflow-x-auto">
-        <span className="text-[13px] font-medium text-warning bg-surface border border-border rounded-lg px-3 py-1.5 whitespace-nowrap">
-          {stats.expiring_soon} expiring
-        </span>
-        <span className="text-[13px] font-medium text-danger bg-surface border border-border rounded-lg px-3 py-1.5 whitespace-nowrap">
-          {stats.expired} expired
-        </span>
-        <span className="text-[13px] font-medium text-safe bg-surface border border-border rounded-lg px-3 py-1.5 whitespace-nowrap">
-          {freshCount} fresh
-        </span>
-      </div>
+      {!loading && !error && items.length > 0 && (
+        <div className="flex gap-2 mb-5 overflow-x-auto">
+          <span className="text-[13px] font-medium text-warning bg-warning/8 border border-warning/15 rounded-xl px-3 py-1.5 whitespace-nowrap">
+            {stats.expiring_soon} expiring
+          </span>
+          <span className="text-[13px] font-medium text-danger bg-danger/8 border border-danger/15 rounded-xl px-3 py-1.5 whitespace-nowrap">
+            {stats.expired} expired
+          </span>
+          <span className="text-[13px] font-medium text-safe bg-safe/8 border border-safe/15 rounded-xl px-3 py-1.5 whitespace-nowrap">
+            {freshCount} fresh
+          </span>
+        </div>
+      )}
 
       {/* Filter tabs */}
-      <div className="flex gap-4 border-b border-border mb-4">
-        {tabs.map((tab) => (
-          <button
-            key={tab.value}
-            onClick={() => setActiveTab(tab.value)}
-            className={`
-              pb-2 text-sm font-medium min-h-0
-              transition-colors duration-150
-              ${
-                activeTab === tab.value
-                  ? "text-accent border-b-2 border-accent"
-                  : "text-text-muted"
-              }
-            `}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      {!loading && !error && items.length > 0 && (
+        <div className="flex gap-4 border-b border-border mb-4">
+          {tabs.map((tab) => (
+            <button
+              key={tab.value}
+              onClick={() => setActiveTab(tab.value)}
+              className={`
+                pb-2 text-sm font-medium min-h-0
+                transition-colors duration-150
+                ${
+                  activeTab === tab.value
+                    ? "text-accent border-b-2 border-accent"
+                    : "text-text-muted"
+                }
+              `}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Loading state */}
       {loading && (
-        <div className="flex justify-center py-12">
-          <span className="h-6 w-6 rounded-full border-2 border-accent border-t-transparent animate-spin" />
+        <div className="flex flex-col items-center justify-center py-16 gap-3">
+          <span className="h-8 w-8 rounded-full border-[3px] border-accent border-t-transparent animate-spin" />
+          <p className="text-sm text-text-muted">Loading inventory…</p>
         </div>
       )}
 
       {/* Error state */}
       {error && !loading && (
-        <div className="p-4 bg-danger/10 border border-danger/20 rounded-xl mb-4">
-          <p className="text-sm text-danger">{error}</p>
-          <button
-            onClick={fetchInventory}
-            className="text-xs text-danger/70 underline mt-1 min-h-0"
-          >
-            Tap to retry
-          </button>
-        </div>
+        <ErrorState
+          title="Couldn't load inventory"
+          message={error}
+          onRetry={fetchInventory}
+        />
+      )}
+
+      {/* Empty state */}
+      {!loading && !error && items.length === 0 && (
+        <EmptyState
+          icon="🍎"
+          title="No items yet"
+          message="Scan a fruit and tap 'Add to Inventory' to start tracking."
+          action={{ label: "Scan a fruit", href: "/scan" }}
+        />
+      )}
+
+      {/* Empty filter state */}
+      {!loading && !error && items.length > 0 && filtered.length === 0 && (
+        <EmptyState
+          icon="🔍"
+          title="No items here"
+          message={`No items match the "${activeTab.replace("_", " ")}" filter.`}
+        />
       )}
 
       {/* List */}
-      {!loading && !error && (
-        <InventoryList items={filtered} onItemClick={handleDelete} />
+      {!loading && !error && filtered.length > 0 && (
+        <div className="animate-stagger">
+          <InventoryList items={filtered} onItemClick={handleDelete} />
+        </div>
       )}
 
       {/* FAB */}

@@ -23,9 +23,10 @@ export function Card({ children, statusBorder = "none", className = "", onClick 
       role={onClick ? "button" : undefined}
       tabIndex={onClick ? 0 : undefined}
       className={`
-        bg-surface border border-border rounded-xl p-4
+        bg-surface border border-border rounded-2xl p-4
+        shadow-[var(--shadow-sm)]
         ${borderStyles[statusBorder]}
-        ${onClick ? "cursor-pointer hover:translate-y-[-2px] transition-transform duration-150" : ""}
+        ${onClick ? "cursor-pointer hover:shadow-[var(--shadow-md)] hover:translate-y-[-1px] active:translate-y-0 transition-all duration-150" : ""}
         ${className}
       `}
     >
