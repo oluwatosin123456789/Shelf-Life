@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { BottomNav } from "@/components/ui/BottomNav";
 import { Providers } from "./providers";
+import { ServiceWorkerRegistrar } from "./sw-register";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -13,6 +14,16 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Fresco — Know Your Fruit",
   description: "AI-powered fruit freshness assistant. Scan, estimate shelf life, and store smarter.",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Fresco",
+  },
+  icons: {
+    icon: "/icons/icon-192.png",
+    apple: "/icons/icon-192.png",
+  },
 };
 
 export const viewport: Viewport = {
@@ -36,6 +47,7 @@ export default function RootLayout({
           </main>
           <BottomNav />
         </Providers>
+        <ServiceWorkerRegistrar />
       </body>
     </html>
   );
