@@ -135,7 +135,7 @@ export default function ResultsPage() {
             onAddToInventory={handleAdd}
             onScanAgain={() => router.push("/scan")}
             addingToInventory={adding}
-            addedToInventory={added}
+
           />
         </div>
       </div>
