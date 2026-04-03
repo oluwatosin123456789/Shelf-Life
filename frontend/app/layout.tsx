@@ -4,6 +4,7 @@ import "./globals.css";
 import { BottomNav } from "@/components/ui/BottomNav";
 import { Providers } from "./providers";
 import { ServiceWorkerRegistrar } from "./sw-register";
+import { ServiceWorkerRegistrar } from "./sw-register";
 
 const inter = Inter({
   subsets: ["latin"],
