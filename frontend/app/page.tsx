@@ -11,6 +11,9 @@ export default function Home() {
       >
         Scan Your First Fruit
       </Link>
+
+
+      
     </div>
   );
 }
