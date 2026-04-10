@@ -74,6 +74,29 @@ export default function AccountPage() {
           Sign Out
         </Button>
       </div>
+
+
+
+
+{/* Logout */}
+      <div className="mt-8">
+        <Button
+          variant="secondary"
+          fullWidth
+          onClick={handleLogout}
+        >
+          Sign Out
+        </Button>
+      </div>
+
+
+
+
+
+
+
+
+
     </div>
   );
 }
