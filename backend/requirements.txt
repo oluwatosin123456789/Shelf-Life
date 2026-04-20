@@ -11,6 +11,7 @@ uvicorn[standard]
 sqlalchemy
 alembic
 aiosqlite
+asyncpg
 
 # --- Data Validation ---
 pydantic

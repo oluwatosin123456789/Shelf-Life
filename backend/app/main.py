@@ -18,8 +18,6 @@ from app.config import get_settings
 from app.database import init_db, async_session
 from app.seed_data import seed_database
 from app.schemas.schemas import HealthResponse
-
-# Import routers
 from app.routers import fruits, scan, inventory, auth
 
 settings = get_settings()
@@ -43,11 +41,11 @@ async def lifespan(app: FastAPI):
         - Clean up resources
     """
     # --- Startup ---
-    print("🚀 Starting Fruit Shelf Life Estimator API...")
+    print("[*] Starting Fruit Shelf Life Estimator API...")
 
     # Create database tables
     await init_db()
-    print("📦 Database tables created")
+    print("[+] Database tables created")
 
     # Seed database
     async with async_session() as session:
@@ -56,20 +54,20 @@ async def lifespan(app: FastAPI):
     # Create upload directory
     upload_dir = Path(settings.upload_dir)
     upload_dir.mkdir(parents=True, exist_ok=True)
-    print(f"📁 Upload directory ready: {upload_dir}")
+    print(f"[+] Upload directory ready: {upload_dir}")
 
     # Create models directory (for AI model files)
     models_dir = Path("models")
     models_dir.mkdir(parents=True, exist_ok=True)
 
-    print("✅ Fruit Shelf Life Estimator API is ready!")
-    print(f"📖 API Docs: http://localhost:8000/docs")
-    print(f"📖 ReDoc: http://localhost:8000/redoc")
+    print("[OK] Fruit Shelf Life Estimator API is ready!")
+    print("[>] API Docs: http://localhost:8000/docs")
+    print("[>] ReDoc: http://localhost:8000/redoc")
 
     yield  # App is running
 
     # --- Shutdown ---
-    print("👋 Shutting down Fruit Shelf Life Estimator API...")
+    print("[*] Shutting down Fruit Shelf Life Estimator API...")
 
 
 # ============================================
