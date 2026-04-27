@@ -3,22 +3,26 @@ Shelf Life Estimator — Fruit Classifier (AI Stub)
 ===================================================
 Identifies what fruit is in an image.
 
-Phase 1: Returns mock predictions using an O(1) hash map lookup.
+Phase 1 (current): Returns mock predictions.
+  - DEMO_MODE = True: always returns a fixed fruit (for pitch demos)
+  - DEMO_MODE = False: filename matching or random
 Phase 2: Will use MobileNetV2 transfer learning model trained on Fruits-360.
 """
 
+import os
 import random
 from pathlib import Path
 
 
 # ============================================
-# DSA: Hash Map for O(1) fruit lookup by name
+# DEMO MODE — set to False when real AI is ready
 # ============================================
-# Instead of looping through a list (O(n) linear search),
-# we use a dictionary (hash map) for instant O(1) lookups.
-#
-# Old approach:  for fruit in list: if name matches → O(n)
-# New approach:  dict[name] → O(1)
+# When True, the classifier always returns the DEMO_FRUIT
+# so the pitch demo is 100% predictable.
+# Change DEMO_FRUIT to whatever fruit you want to demo with.
+
+DEMO_MODE = os.getenv("DEMO_MODE", "true").lower() == "true"
+DEMO_FRUIT = os.getenv("DEMO_FRUIT", "banana").lower()
 
 MOCK_CLASSIFICATIONS: dict[str, float] = {
     "apple": 0.94,
@@ -43,8 +47,6 @@ MOCK_CLASSIFICATIONS: dict[str, float] = {
     "coconut": 0.91,
 }
 
-# Pre-computed list of fruit names for random selection
-# Stored once to avoid repeated dict.keys() calls
 _FRUIT_NAMES = list(MOCK_CLASSIFICATIONS.keys())
 
 
@@ -52,27 +54,25 @@ async def classify_fruit(image_path: str) -> dict:
     """
     Classify a fruit from an image.
 
-    Args:
-        image_path: Path to the uploaded image file.
-
-    Returns:
-        dict with keys:
-            - name (str): Predicted fruit name (title-cased)
-            - confidence (float): Confidence score 0.0 - 1.0
-
-    DSA: Uses hash map (dict) for O(1) name matching instead of
-         O(n) linear search through a list.
+    In DEMO_MODE, always returns DEMO_FRUIT for predictable pitch demos.
+    Otherwise falls back to filename matching or random selection.
 
     TODO (Phase 2):
         - Load MobileNetV2 model trained on Fruits-360 dataset
         - Preprocess image: resize to 224x224, normalize
         - Run inference and return top prediction
     """
-    # Phase 1: Return a mock classification
-    # Try to match filename to a known fruit via hash map
+    # --- DEMO MODE: always return the demo fruit ---
+    if DEMO_MODE:
+        confidence = MOCK_CLASSIFICATIONS.get(DEMO_FRUIT, 0.92)
+        return {
+            "name": DEMO_FRUIT.title(),
+            "confidence": confidence,
+        }
+
+    # --- Normal mode: try filename matching ---
     filename = Path(image_path).stem.lower()
 
-    # O(1) hash map lookup for each known fruit name
     for fruit_name, confidence in MOCK_CLASSIFICATIONS.items():
         if fruit_name in filename:
             return {
@@ -80,7 +80,7 @@ async def classify_fruit(image_path: str) -> dict:
                 "confidence": confidence,
             }
 
-    # Random pick if no filename match
+    # Random pick if no match
     chosen = random.choice(_FRUIT_NAMES)
     return {
         "name": chosen.title(),
