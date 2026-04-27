@@ -19,6 +19,7 @@ from app.ai.classifier import classify_fruit
 from app.ai.freshness import assess_freshness
 from app.ai.estimator import estimate_shelf_life
 from app.ai.compatibility import check_compatibility
+from app.ai.golden_path import get_golden_path
 from app.ai.decision_engine import Verdict, produce_verdict
 
 settings = get_settings()
@@ -137,9 +138,15 @@ async def process_scan(contents: bytes, filename: str | None, db: AsyncSession) 
         classification_confidence = classification["confidence"]
 
         # --- Step 3: Assess freshness ---
-        freshness = await assess_freshness(str(file_path))
-        freshness_score = freshness["score"]
-        freshness_label = freshness["label"]
+        # Check Golden Path first (curated demo data for pitches)
+        golden = get_golden_path(fruit_name)
+        if golden:
+            freshness_score = golden["freshness_score"]
+            freshness_label = golden["freshness_label"]
+        else:
+            freshness = await assess_freshness(str(file_path))
+            freshness_score = freshness["score"]
+            freshness_label = freshness["label"]
 
         # --- Step 4: Database lookup ---
         fruit = await lookup_fruit(fruit_name, db)

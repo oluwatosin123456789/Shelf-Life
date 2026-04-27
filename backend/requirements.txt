@@ -1,7 +1,3 @@
-# ============================================
-# Shelf Life Estimator — Backend Dependencies
-# ============================================
-# Using latest versions for Python 3.14 compatibility
 
 # --- Core Framework ---
 fastapi
