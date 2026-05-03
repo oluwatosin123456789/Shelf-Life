@@ -27,7 +27,7 @@ export default function AccountPage() {
     <div className="flex flex-col px-4 pt-4 pb-24">
       <h1 className="text-2xl font-bold mb-6">Account</h1>
 
-      {/* User Info */}
+
       <Card>
         <div className="flex items-center gap-4">
           <div className="w-14 h-14 rounded-full bg-accent flex items-center justify-center text-white text-xl font-bold">
