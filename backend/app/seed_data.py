@@ -592,10 +592,10 @@ async def seed_database(db: AsyncSession) -> None:
     count = result.scalar()
 
     if count > 0:
-        print(f"✅ Database already seeded with {count} fruits. Skipping.")
+        print(f"[OK] Database already seeded with {count} fruits. Skipping.")
         return
 
-    print("🌱 Seeding database with fruits...")
+    print("[SEED] Seeding database with fruits...")
 
     # Seed fruits from the data list
     fruits = [Fruit(**data) for data in FRUIT_DATA]
@@ -609,7 +609,8 @@ async def seed_database(db: AsyncSession) -> None:
     if user_count == 0:
         default_user = User(**DEFAULT_USER)
         db.add(default_user)
-        print("👤 Created default user")
+        print("[SEED] Created default user")
 
     await db.commit()
-    print(f"✅ Seeded {len(fruits)} fruits!")
+    print(f"[OK] Seeded {len(fruits)} fruits!")
+

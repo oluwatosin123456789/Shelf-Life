@@ -11,11 +11,33 @@ from app.config import get_settings
 
 settings = get_settings()
 
+
+def _prepare_database_url(url: str) -> str:
+    """
+    Normalize the DATABASE_URL for the correct async driver.
+    Handles MySQL, PostgreSQL, and SQLite formats.
+    """
+    # MySQL: ensure async driver
+    if url.startswith("mysql://"):
+        url = url.replace("mysql://", "mysql+aiomysql://", 1)
+
+    # PostgreSQL: ensure async driver
+    if url.startswith("postgres://"):
+        url = url.replace("postgres://", "postgresql+asyncpg://", 1)
+    elif url.startswith("postgresql://"):
+        url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+
+    return url
+
+
+db_url = _prepare_database_url(settings.database_url)
+
 # --- Async Engine ---
 engine = create_async_engine(
-    settings.database_url,
+    db_url,
     echo=settings.debug,  # Log SQL queries in debug mode
     future=True,
+    pool_pre_ping=True,  # Test connections before using them
 )
 
 # --- Async Session Factory ---

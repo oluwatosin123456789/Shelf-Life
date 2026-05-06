@@ -6,8 +6,8 @@ uvicorn[standard]
 # --- Database ---
 sqlalchemy
 alembic
-aiosqlite
-asyncpg
+aiomysql
+cryptography
 
 # --- Data Validation ---
 pydantic

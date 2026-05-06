@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     debug: bool = True
 
     # --- Database ---
-    database_url: str = "sqlite+aiosqlite:///./shelf_life.db"
+    database_url: str = "mysql+aiomysql://root:@127.0.0.1:3306/fresco"
 
     # --- CORS ---
     allowed_origins: str = "http://localhost:3000,http://127.0.0.1:3000"
