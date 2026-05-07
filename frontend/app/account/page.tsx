@@ -40,7 +40,7 @@ export default function AccountPage() {
         </div>
       </Card>
 
-      {/* Settings */}
+      {/* Settingssss */}
       <div className="mt-6 flex flex-col gap-3">
         <Card>
           <div className="flex items-center justify-between">
