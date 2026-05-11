@@ -64,7 +64,7 @@ export default function AccountPage() {
         </Card>
       </div>
 
-      {/* Logout */}
+      {/* Logouttt */}
       <div className="mt-8">
         <Button
           variant="secondary"
