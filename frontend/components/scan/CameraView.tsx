@@ -21,9 +21,9 @@ export function CameraView({ onCapture, disabled = false }: CameraViewProps) {
   const [preview, setPreview] = useState<string | null>(null);
   const [capturedFile, setCapturedFile] = useState<File | null>(null);
 
-  // --------------------------------------------------
   // Start / stop camera
-  // --------------------------------------------------
+
+  
   const startCamera = useCallback(async () => {
     setCameraError(null);
     setCameraReady(false);
