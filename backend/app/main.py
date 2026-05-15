@@ -20,7 +20,11 @@ from app.seed_data import seed_database
 from app.schemas.schemas import HealthResponse
 from app.routers import fruits, scan, inventory, auth
 
+
+
+
 settings = get_settings()
+
 
 
 # ============================================
@@ -165,3 +169,5 @@ async def health_check():
         version=settings.app_version,
         debug=settings.debug,
     )
+
+
