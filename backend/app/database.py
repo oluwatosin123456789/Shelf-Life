@@ -37,7 +37,10 @@ engine = create_async_engine(
     db_url,
     echo=settings.debug,  # Log SQL queries in debug mode
     future=True,
-    pool_pre_ping=True,  # Test connections before using them
+    # aiomysql's async connection ping signature is incompatible with
+    # SQLAlchemy's pool pre-ping implementation (missing `reconnect` arg),
+    # so disable `pool_pre_ping` when using aiomysql to avoid TypeError on startup.
+    pool_pre_ping=False if "aiomysql" in db_url else True,
 )
 
 # --- Async Session Factory ---

@@ -24,7 +24,9 @@ class Settings(BaseSettings):
     debug: bool = True
 
     # --- Database ---
-    database_url: str = "mysql+aiomysql://root:@127.0.0.1:3306/fresco"
+    # Default to a local SQLite file for developer convenience so the
+    # backend can run without an external database server.
+    database_url: str = "sqlite+aiosqlite:///./shelf_life_dev.db"
 
     # --- CORS ---
     allowed_origins: str = "http://localhost:3000,http://127.0.0.1:3000"
