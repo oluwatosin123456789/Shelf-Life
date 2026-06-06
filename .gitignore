@@ -45,5 +45,14 @@ Thumbs.db
 # --- Supabase ---
 supabase/.temp/
 
+# --- Large files ---
+*.docx
+*.h5
+*.keras
+*.onnx
+*.tflite
+Project/mobilenet_v2_weights_tf_dim_ordering_tf_kernels*
+
 # --- Misc ---
 *.log
+~$*
