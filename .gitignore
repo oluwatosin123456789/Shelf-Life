@@ -1,0 +1,49 @@
+# ============================================
+# Fresco — Git Ignore
+# ============================================
+
+# --- Environment variables (NEVER commit these) ---
+.env
+.env.local
+.env.production
+backend/.env
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.pyo
+backend/venv/
+*.egg-info/
+
+# --- Node.js ---
+node_modules/
+frontend/.next/
+frontend/out/
+
+# --- AI Models (too large for git) ---
+backend/models/*.keras
+backend/models/*.h5
+backend/models/*.onnx
+backend/models/*.tflite
+!backend/models/.gitkeep
+
+# --- Uploads ---
+backend/uploads/
+!backend/uploads/.gitkeep
+
+# --- IDE ---
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+~$*
+
+# --- Supabase ---
+supabase/.temp/
+
+# --- Misc ---
+*.log
