@@ -3,9 +3,8 @@ Golden Path Demo Data
 ======================
 Curated, perfect responses for pitch demonstrations.
 
-When the classifier returns a known demo fruit, the Golden Path
-overrides the freshness score to ensure the demo always looks
-flawless on stage.
+When demo mode is enabled and the classifier returns a known demo fruit,
+the Golden Path overrides the freshness score to keep the demo stable.
 
 Usage: Import GOLDEN_PATH_DEMOS and check if a fruit name
 matches before using the mock freshness score.

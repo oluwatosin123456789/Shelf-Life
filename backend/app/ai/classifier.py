@@ -1,88 +1,108 @@
 """
-Shelf Life Estimator — Fruit Classifier (AI Stub)
-===================================================
-Identifies what fruit is in an image.
+Fruit Classifier — Real inference using fresco_model.keras (MobileNetV2).
 
-Phase 1 (current): Returns mock predictions.
-  - DEMO_MODE = True: always returns a fixed fruit (for pitch demos)
-  - DEMO_MODE = False: filename matching or random
-Phase 2: Will use MobileNetV2 transfer learning model trained on Fruits-360.
+Trained on 4 fruit types across freshness stages:
+  Apple, Banana, Carrot, Tomato (+ Expired class)
+
+Each class name encodes the fruit type and a video-frame range.
+Lower range numbers = earlier frames = fresher fruit.
 """
 
 import os
-import random
-from pathlib import Path
+import re
 
+import numpy as np
+from PIL import Image
 
-# ============================================
-# DEMO MODE — set to False when real AI is ready
-# ============================================
-# When True, the classifier always returns the DEMO_FRUIT
-# so the pitch demo is 100% predictable.
-# Change DEMO_FRUIT to whatever fruit you want to demo with.
+os.environ.setdefault("KERAS_BACKEND", "numpy")
+import keras  # noqa: E402  — backend env var must be set before import
 
-DEMO_MODE = os.getenv("DEMO_MODE", "true").lower() == "true"
-DEMO_FRUIT = os.getenv("DEMO_FRUIT", "banana").lower()
+from app.ai.freshness import get_freshness_label
 
-MOCK_CLASSIFICATIONS: dict[str, float] = {
-    "apple": 0.94,
-    "banana": 0.96,
-    "orange": 0.91,
-    "strawberry": 0.92,
-    "mango": 0.89,
-    "grape": 0.87,
-    "pineapple": 0.88,
-    "watermelon": 0.93,
-    "avocado": 0.85,
-    "peach": 0.86,
-    "lemon": 0.90,
-    "blueberry": 0.91,
-    "kiwi": 0.88,
-    "papaya": 0.84,
-    "cherry": 0.90,
-    "pear": 0.87,
-    "pomegranate": 0.85,
-    "dragon fruit": 0.83,
-    "guava": 0.82,
-    "coconut": 0.91,
+# Class labels in the alphabetical order Keras flow_from_directory assigns them.
+# 14 classes = 3 Apple + 4 Banana + 3 Carrot + 1 Expired + 3 Tomato
+CLASS_NAMES = [
+    "Apple(1-5)",    # 0
+    "Apple(10-14)",  # 1
+    "Apple(5-10)",   # 2
+    "Banana(1-5)",   # 3
+    "Banana(10-15)", # 4
+    "Banana(15-20)", # 5
+    "Banana(5-10)",  # 6
+    "Carrot(1-2)",   # 7
+    "Carrot(3-4)",   # 8
+    "Expired",       # 9
+    "Tomato(1-5)",   # 10
+    "Tomato(10-15)", # 11
+    "Tomato(5-10)",  # 12
+    "carrot(5-6)",   # 13
+]
+
+# Freshness score per class.
+# Lower range-start number = earlier in sequence = fresher fruit.
+_FRESHNESS: dict[str, float] = {
+    "Apple(1-5)":    0.90,
+    "Apple(5-10)":   0.65,
+    "Apple(10-14)":  0.35,
+    "Banana(1-5)":   0.92,
+    "Banana(5-10)":  0.68,
+    "Banana(10-15)": 0.42,
+    "Banana(15-20)": 0.18,
+    "Carrot(1-2)":   0.90,
+    "Carrot(3-4)":   0.60,
+    "carrot(5-6)":   0.30,
+    "Tomato(1-5)":   0.90,
+    "Tomato(5-10)":  0.60,
+    "Tomato(10-15)": 0.30,
+    "Expired":       0.05,
 }
 
-_FRUIT_NAMES = list(MOCK_CLASSIFICATIONS.keys())
+_model = None
+
+
+def _get_model():
+    global _model
+    if _model is None:
+        from app.config import get_settings
+        path = str(get_settings().classifier_model_file)
+        _model = keras.models.load_model(path)
+    return _model
+
+
+def _preprocess(image_path: str) -> np.ndarray:
+    img = Image.open(image_path).convert("RGB").resize((224, 224))
+    arr = np.array(img, dtype=np.float32) / 255.0
+    return np.expand_dims(arr, axis=0)  # (1, 224, 224, 3)
+
+
+def _parse_fruit_name(class_name: str) -> str:
+    """Strip the '(X-Y)' suffix and title-case the result."""
+    return re.sub(r"\(\d+-\d+\)", "", class_name).strip().title()
 
 
 async def classify_fruit(image_path: str) -> dict:
     """
-    Classify a fruit from an image.
+    Classify a fruit image using the trained fresco_model.keras.
 
-    In DEMO_MODE, always returns DEMO_FRUIT for predictable pitch demos.
-    Otherwise falls back to filename matching or random selection.
-
-    TODO (Phase 2):
-        - Load MobileNetV2 model trained on Fruits-360 dataset
-        - Preprocess image: resize to 224x224, normalize
-        - Run inference and return top prediction
+    Returns:
+        name            - Fruit name (title-cased, e.g. "Apple")
+        confidence      - Softmax confidence for the top class (0-1)
+        freshness_score - Estimated freshness score (0-1) derived from class stage
+        freshness_label - Human-readable label ("Fresh", "Aging", etc.)
+        expired         - True if the model predicts the Expired class
     """
-    # --- DEMO MODE: always return the demo fruit ---
-    if DEMO_MODE:
-        confidence = MOCK_CLASSIFICATIONS.get(DEMO_FRUIT, 0.92)
-        return {
-            "name": DEMO_FRUIT.title(),
-            "confidence": confidence,
-        }
+    model = _get_model()
+    arr = _preprocess(image_path)
+    preds = model.predict(arr, verbose=0)
+    idx = int(np.argmax(preds[0]))
+    confidence = float(preds[0][idx])
+    class_name = CLASS_NAMES[idx]
+    freshness_score = _FRESHNESS.get(class_name, 0.70)
 
-    # --- Normal mode: try filename matching ---
-    filename = Path(image_path).stem.lower()
-
-    for fruit_name, confidence in MOCK_CLASSIFICATIONS.items():
-        if fruit_name in filename:
-            return {
-                "name": fruit_name.title(),
-                "confidence": confidence,
-            }
-
-    # Random pick if no match
-    chosen = random.choice(_FRUIT_NAMES)
     return {
-        "name": chosen.title(),
-        "confidence": round(random.uniform(0.75, 0.95), 2),
+        "name": _parse_fruit_name(class_name),
+        "confidence": round(confidence, 4),
+        "freshness_score": freshness_score,
+        "freshness_label": get_freshness_label(freshness_score),
+        "expired": class_name == "Expired",
     }

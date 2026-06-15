@@ -16,10 +16,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import get_settings
 from app.models.schema import Fruit
 from app.ai.classifier import classify_fruit
-from app.ai.freshness import assess_freshness
 from app.ai.estimator import estimate_shelf_life
 from app.ai.compatibility import check_compatibility
-from app.ai.golden_path import get_golden_path
 from app.ai.decision_engine import Verdict, produce_verdict
 
 settings = get_settings()
@@ -40,7 +38,7 @@ async def save_uploaded_image(contents: bytes, original_filename: str | None) ->
 
     Returns the path to the saved file.
     """
-    upload_dir = Path(settings.upload_dir)
+    upload_dir = settings.upload_dir_path
     upload_dir.mkdir(parents=True, exist_ok=True)
 
     file_ext = Path(original_filename).suffix if original_filename else ".jpg"
@@ -134,19 +132,19 @@ async def process_scan(contents: bytes, filename: str | None, db: AsyncSession) 
     try:
         # --- Step 2: Classify the fruit ---
         classification = await classify_fruit(str(file_path))
+
+        if classification.get("expired"):
+            raise ScanError(
+                "Your fruit appears to be spoiled or expired. Please discard it.",
+                status_code=422,
+            )
+
         fruit_name = classification["name"]
         classification_confidence = classification["confidence"]
 
-        # --- Step 3: Assess freshness ---
-        # Check Golden Path first (curated demo data for pitches)
-        golden = get_golden_path(fruit_name)
-        if golden:
-            freshness_score = golden["freshness_score"]
-            freshness_label = golden["freshness_label"]
-        else:
-            freshness = await assess_freshness(str(file_path))
-            freshness_score = freshness["score"]
-            freshness_label = freshness["label"]
+        # --- Step 3: Freshness (derived from model class stage) ---
+        freshness_score = classification["freshness_score"]
+        freshness_label = classification["freshness_label"]
 
         # --- Step 4: Database lookup ---
         fruit = await lookup_fruit(fruit_name, db)

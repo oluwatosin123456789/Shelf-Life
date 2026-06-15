@@ -8,7 +8,6 @@ Run with:
 """
 
 from contextlib import asynccontextmanager
-from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -56,13 +55,25 @@ async def lifespan(app: FastAPI):
         await seed_database(session)
 
     # Create upload directory
-    upload_dir = Path(settings.upload_dir)
+    upload_dir = settings.upload_dir_path
     upload_dir.mkdir(parents=True, exist_ok=True)
     print(f"[+] Upload directory ready: {upload_dir}")
 
     # Create models directory (for AI model files)
-    models_dir = Path("models")
+    models_dir = settings.backend_dir / "models"
     models_dir.mkdir(parents=True, exist_ok=True)
+
+    # Preload and warm up the classifier model so first user request is fast
+    try:
+        import numpy as np
+        from app.ai.classifier import _get_model
+        print("[*] Loading AI classifier model...")
+        model = _get_model()
+        dummy = np.zeros((1, 224, 224, 3), dtype="float32")
+        model.predict(dummy, verbose=0)
+        print("[+] AI classifier model ready")
+    except Exception as e:
+        print(f"[!] AI model preload failed (will retry on first request): {e}")
 
     print("[OK] Fruit Shelf Life Estimator API is ready!")
     print("[>] API Docs: http://localhost:8000/docs")
@@ -117,8 +128,8 @@ app.add_middleware(
 # ============================================
 
 # Serve uploaded images at /uploads/filename.jpg
-Path(settings.upload_dir).mkdir(parents=True, exist_ok=True)
-app.mount("/uploads", StaticFiles(directory=settings.upload_dir), name="uploads")
+settings.upload_dir_path.mkdir(parents=True, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=str(settings.upload_dir_path)), name="uploads")
 
 
 # ============================================
