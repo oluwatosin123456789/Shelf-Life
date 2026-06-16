@@ -26,7 +26,9 @@ export default function ScanPage() {
       router.push("/results");
     } catch (err) {
       if (err instanceof ApiError) {
-        if (err.status === 0 || err.detail.includes("fetch")) {
+        // Show the API's message verbatim (covers both timeout and server errors).
+        // Only replace generic fetch-failure text with a friendlier message.
+        if (err.detail.toLowerCase().includes("failed to fetch")) {
           setError("Can't reach the server. Check your connection and try again.");
         } else {
           setError(err.detail);

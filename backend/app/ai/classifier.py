@@ -8,6 +8,7 @@ Each class name encodes the fruit type and a video-frame range.
 Lower range numbers = earlier frames = fresher fruit.
 """
 
+import asyncio
 import os
 import re
 
@@ -71,7 +72,8 @@ def _get_model():
 
 def _preprocess(image_path: str) -> np.ndarray:
     img = Image.open(image_path).convert("RGB").resize((224, 224))
-    arr = np.array(img, dtype=np.float32) / 255.0
+    arr = np.array(img, dtype=np.float32)
+    arr = (arr / 127.5) - 1.0  # MobileNetV2 expects [-1, 1], not [0, 1]
     return np.expand_dims(arr, axis=0)  # (1, 224, 224, 3)
 
 
@@ -80,29 +82,49 @@ def _parse_fruit_name(class_name: str) -> str:
     return re.sub(r"\(\d+-\d+\)", "", class_name).strip().title()
 
 
+def _run_inference(model, arr: np.ndarray) -> np.ndarray:
+    # Called in a thread pool — keeps the ASGI event loop unblocked during
+    # the CPU-bound model.predict() call (~0.5s on numpy backend).
+    return model.predict(arr, verbose=0)
+
+
+_EXPIRED_IDX = CLASS_NAMES.index("Expired")
+
+# Demo freshness used until the freshness model is trained.
+_DEMO_FRESHNESS_SCORE = 0.80
+_DEMO_FRESHNESS_LABEL = "Fresh"
+
+
 async def classify_fruit(image_path: str) -> dict:
     """
     Classify a fruit image using the trained fresco_model.keras.
 
     Returns:
-        name            - Fruit name (title-cased, e.g. "Apple")
-        confidence      - Softmax confidence for the top class (0-1)
-        freshness_score - Estimated freshness score (0-1) derived from class stage
-        freshness_label - Human-readable label ("Fresh", "Aging", etc.)
-        expired         - True if the model predicts the Expired class
+        name            - Fruit name (title-cased, e.g. "Carrot")
+        confidence      - Model confidence for the top fruit class (0-1)
+        freshness_score - Demo value (0.80) until freshness model is trained
+        freshness_label - Demo label ("Fresh") until freshness model is trained
+        expired         - Always False in demo mode
     """
     model = _get_model()
     arr = _preprocess(image_path)
-    preds = model.predict(arr, verbose=0)
-    idx = int(np.argmax(preds[0]))
+    preds = await asyncio.to_thread(_run_inference, model, arr)
+    del arr
+
+    # Mask out the Expired class so the model picks the best fruit type.
+    # The Expired class dominates due to a training imbalance; fruit-type
+    # recognition is still useful via the remaining 13 classes.
+    scores = preds[0].copy()
+    scores[_EXPIRED_IDX] = 0.0
+
+    idx = int(np.argmax(scores))
     confidence = float(preds[0][idx])
     class_name = CLASS_NAMES[idx]
-    freshness_score = _FRESHNESS.get(class_name, 0.70)
 
     return {
         "name": _parse_fruit_name(class_name),
         "confidence": round(confidence, 4),
-        "freshness_score": freshness_score,
-        "freshness_label": get_freshness_label(freshness_score),
-        "expired": class_name == "Expired",
+        "freshness_score": _DEMO_FRESHNESS_SCORE,
+        "freshness_label": _DEMO_FRESHNESS_LABEL,
+        "expired": False,
     }

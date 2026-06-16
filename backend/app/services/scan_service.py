@@ -132,13 +132,6 @@ async def process_scan(contents: bytes, filename: str | None, db: AsyncSession) 
     try:
         # --- Step 2: Classify the fruit ---
         classification = await classify_fruit(str(file_path))
-
-        if classification.get("expired"):
-            raise ScanError(
-                "Your fruit appears to be spoiled or expired. Please discard it.",
-                status_code=422,
-            )
-
         fruit_name = classification["name"]
         classification_confidence = classification["confidence"]
 

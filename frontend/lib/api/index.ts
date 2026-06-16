@@ -117,13 +117,26 @@ export async function scanFruit(file: File): Promise<ScanResult> {
   const formData = new FormData();
   formData.append("image", file);
 
-  const res = await fetch(`${API_BASE}/api/scan/`, {
-    method: "POST",
-    headers: { ...authHeaders() },
-    body: formData,
-  });
+  // Abort the request if the backend hasn't responded in 30 seconds.
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30_000);
 
-  return handleResponse<ScanResult>(res);
+  try {
+    const res = await fetch(`${API_BASE}/api/scan/`, {
+      method: "POST",
+      headers: { ...authHeaders() },
+      body: formData,
+      signal: controller.signal,
+    });
+    return handleResponse<ScanResult>(res);
+  } catch (err) {
+    if (err instanceof DOMException && err.name === "AbortError") {
+      throw new ApiError(0, "Scan timed out — the server took too long. Please try again.");
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 // ============================================
