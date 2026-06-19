@@ -12,26 +12,31 @@ import {
 import { Card } from "@/components/ui/Card";
 import { addToInventory, ApiError, type ScanResult } from "@/lib/api";
 
+function getStoredScanResult(): ScanResult | null {
+  if (typeof window === "undefined") return null;
+
+  const stored = sessionStorage.getItem("scanResult");
+  if (!stored) return null;
+
+  try {
+    return JSON.parse(stored);
+  } catch {
+    return null;
+  }
+}
+
 export default function ResultsPage() {
   const router = useRouter();
-  const [result, setResult] = useState<ScanResult | null>(null);
+  const [result] = useState<ScanResult | null>(() => getStoredScanResult());
   const [added, setAdded] = useState(false);
   const [adding, setAdding] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
 
   useEffect(() => {
-    const stored = sessionStorage.getItem("scanResult");
-    if (stored) {
-      try {
-        setResult(JSON.parse(stored));
-      } catch {
-        router.push("/scan");
-      }
-    } else {
-      // No scan result — redirect to scan page
+    if (!result) {
       router.push("/scan");
     }
-  }, [router]);
+  }, [result, router]);
 
   if (!result) {
     return (
@@ -66,7 +71,6 @@ export default function ResultsPage() {
 
   return (
     <div className="flex flex-col px-4 pt-4 pb-24">
-      {/* Back + Logo */}
       <div className="flex items-center gap-3 mb-6">
         <button
           onClick={() => router.push("/scan")}
@@ -80,7 +84,6 @@ export default function ResultsPage() {
         <span className="text-lg font-semibold">fresco</span>
       </div>
 
-      {/* TIER 1: The Decision */}
       <div className="flex flex-col items-center gap-4 mb-8">
         <StatusBadge status={result.status} />
 
@@ -93,11 +96,10 @@ export default function ResultsPage() {
 
         <RecommendationText
           text={result.recommendation}
-          sublabel={`${result.freshness_label} · ${Math.round(result.confidence * 100)}% confidence`}
+          sublabel={`${result.freshness_label} Â· ${Math.round(result.confidence * 100)}% confidence`}
         />
       </div>
 
-      {/* TIER 2: Supporting Data */}
       <div className="flex flex-col gap-4 mb-6">
         <StorageBreakdown
           shelfLife={result.estimated_shelf_life}
@@ -107,13 +109,12 @@ export default function ResultsPage() {
         {result.storage_tip && (
           <Card>
             <div className="flex gap-2">
-              <span className="text-sm">💡</span>
+              <span className="text-sm">ðŸ’¡</span>
               <p className="text-sm text-text">{result.storage_tip}</p>
             </div>
           </Card>
         )}
 
-        {/* TIER 3: Ethylene Intelligence */}
         {result.ethylene_note && (
           <Card statusBorder="warning">
             <p className="text-[13px] text-text">{result.ethylene_note}</p>
@@ -121,21 +122,19 @@ export default function ResultsPage() {
         )}
       </div>
 
-      {/* Add error */}
       {addError && (
         <div className="mx-4 mb-4 p-3 bg-danger/10 border border-danger/20 rounded-xl">
           <p className="text-sm text-danger">{addError}</p>
         </div>
       )}
 
-      {/* Actions (fixed bottom) */}
       <div className="fixed bottom-14 left-0 right-0 bg-bg border-t border-border">
         <div className="mx-auto max-w-[480px]">
           <ActionButtons
             onAddToInventory={handleAdd}
             onScanAgain={() => router.push("/scan")}
             addingToInventory={adding}
-
+            addedToInventory={added}
           />
         </div>
       </div>

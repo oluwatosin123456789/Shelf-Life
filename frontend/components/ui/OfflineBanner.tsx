@@ -7,14 +7,13 @@ import { useEffect, useState } from "react";
  * Automatically hides when back online.
  */
 export function OfflineBanner() {
-  const [offline, setOffline] = useState(false);
+  const [offline, setOffline] = useState(
+    () => typeof navigator !== "undefined" && !navigator.onLine,
+  );
 
   useEffect(() => {
     const goOffline = () => setOffline(true);
     const goOnline = () => setOffline(false);
-
-    // Check initial state
-    if (!navigator.onLine) setOffline(true);
 
     window.addEventListener("offline", goOffline);
     window.addEventListener("online", goOnline);

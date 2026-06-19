@@ -64,12 +64,25 @@ export function CameraView({ onCapture, disabled = false }: CameraViewProps) {
   }, []);
 
   useEffect(() => {
-    if (mode === "camera" && !preview) {
-      startCamera();
-    } else {
+    let cancelled = false;
+
+    const syncCamera = async () => {
+      if (mode === "camera" && !preview) {
+        await startCamera();
+        return;
+      }
+
+      if (!cancelled) {
+        stopCamera();
+      }
+    };
+
+    syncCamera();
+
+    return () => {
+      cancelled = true;
       stopCamera();
-    }
-    return () => stopCamera();
+    };
   }, [mode, preview, startCamera, stopCamera]);
 
   // --------------------------------------------------

@@ -7,6 +7,9 @@ Uses pydantic-settings for type-safe configuration.
 
 from functools import lru_cache
 from pathlib import Path
+from typing import Any
+
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -24,6 +27,17 @@ class Settings(BaseSettings):
     app_name: str = "Shelf Life Estimator"
     app_version: str = "1.0.0"
     debug: bool = True
+
+    @field_validator("debug", mode="before")
+    @classmethod
+    def parse_debug(cls, value: Any) -> Any:
+        if isinstance(value, str):
+            normalized = value.strip().lower()
+            if normalized in {"release", "prod", "production"}:
+                return False
+            if normalized in {"dev", "development"}:
+                return True
+        return value
 
     # --- Database ---
     # Default to a local SQLite file for developer convenience so the

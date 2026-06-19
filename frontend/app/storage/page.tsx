@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ErrorState } from "@/components/ui/ErrorState";
-import { EmptyState } from "@/components/ui/EmptyState";
 import { checkCompatibility, getFruits, ApiError, type CompatibilityResult, type FruitData } from "@/lib/api";
 
 export default function StoragePage() {
@@ -14,16 +13,13 @@ export default function StoragePage() {
   const [result, setResult] = useState<CompatibilityResult | null>(null);
   const [checking, setChecking] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [fruitsLoading, setFruitsLoading] = useState(true);
   const [fruitsError, setFruitsError] = useState<string | null>(null);
 
   const fetchFruits = () => {
-    setFruitsLoading(true);
     setFruitsError(null);
     getFruits(1, 100)
       .then((data) => setAllFruits(data.items))
-      .catch(() => setFruitsError("Can't load fruit list. Check your connection."))
-      .finally(() => setFruitsLoading(false));
+      .catch(() => setFruitsError("Can't load fruit list. Check your connection."));
   };
 
   useEffect(() => {

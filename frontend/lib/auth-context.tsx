@@ -3,7 +3,6 @@
 import {
   createContext,
   useContext,
-  useEffect,
   useState,
   useCallback,
   type ReactNode,
@@ -19,10 +18,6 @@ import {
   ApiError,
 } from "@/lib/api";
 
-// ============================================
-// Context Type
-// ============================================
-
 interface AuthContextType {
   user: AuthUser | null;
   token: string | null;
@@ -35,55 +30,50 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// ============================================
-// Provider
-// ============================================
-
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [token, setToken] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  // On mount: check localStorage for existing session
-  useEffect(() => {
+  const [session, setSession] = useState<{
+    user: AuthUser | null;
+    token: string | null;
+  }>(() => {
     const storedToken = getToken();
     const storedUser = getStoredUser();
-    if (storedToken && storedUser) {
-      setToken(storedToken);
-      setUser(storedUser);
-    }
-    setIsLoading(false);
+    return {
+      token: storedToken && storedUser ? storedToken : null,
+      user: storedToken && storedUser ? storedUser : null,
+    };
+  });
+  const [isLoading] = useState(false);
+
+  const setAuthSession = useCallback((token: string | null, user: AuthUser | null) => {
+    setSession({ token, user });
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {
     const data = await apiLogin(email, password);
-    setToken(data.access_token);
-    setUser(data.user);
+    setAuthSession(data.access_token, data.user);
     return data;
-  }, []);
+  }, [setAuthSession]);
 
   const register = useCallback(
     async (username: string, email: string, password: string) => {
       const data = await apiRegister(username, email, password);
-      setToken(data.access_token);
-      setUser(data.user);
+      setAuthSession(data.access_token, data.user);
       return data;
     },
-    [],
+    [setAuthSession],
   );
 
   const logout = useCallback(() => {
     apiLogout();
-    setToken(null);
-    setUser(null);
-  }, []);
+    setAuthSession(null, null);
+  }, [setAuthSession]);
 
   return (
     <AuthContext.Provider
       value={{
-        user,
-        token,
-        isAuthenticated: !!token,
+        user: session.user,
+        token: session.token,
+        isAuthenticated: !!session.token,
         isLoading,
         login,
         register,
@@ -94,10 +84,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     </AuthContext.Provider>
   );
 }
-
-// ============================================
-// Hook
-// ============================================
 
 export function useAuth(): AuthContextType {
   const context = useContext(AuthContext);
