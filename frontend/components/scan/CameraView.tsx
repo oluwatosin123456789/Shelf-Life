@@ -85,7 +85,7 @@ export function CameraView({ onCapture, disabled = false }: CameraViewProps) {
     };
   }, [mode, preview, startCamera, stopCamera]);
 
-  // --------------------------------------------------
+ 
   // Capture from live feed
   // --------------------------------------------------
   const captureFrame = () => {
