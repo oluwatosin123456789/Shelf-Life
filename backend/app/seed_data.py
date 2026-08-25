@@ -571,6 +571,34 @@ FRUIT_DATA = [
         "ripeness_indicator": "Gives to pressure, dark green skin, strong sweet-sour aroma.",
         "storage_tips": "Ripen at room temperature until soft. Once ripe, eat immediately or scoop out pulp and freeze. Very perishable when ripe.",
     },
+
+    # === PRODUCE RECOGNIZED BY THE AI CLASSIFIER ===
+    {
+        "name": "Tomato",
+        "subcategory": "other",
+        "shelf_life_room_temp_days": 5,
+        "shelf_life_fridge_days": 10,
+        "shelf_life_freezer_days": 180,
+        "is_ethylene_producer": True,
+        "is_ethylene_sensitive": True,
+        "optimal_temp_min": 10.0,
+        "optimal_temp_max": 13.0,
+        "ripeness_indicator": "Deep red color, firm but yields slightly to pressure. Green shoulders = still ripening.",
+        "storage_tips": "Store at room temperature stem-side down. Refrigeration dulls flavor — only refrigerate fully ripe tomatoes to extend life a few days.",
+    },
+    {
+        "name": "Carrot",
+        "subcategory": "other",
+        "shelf_life_room_temp_days": 5,
+        "shelf_life_fridge_days": 21,
+        "shelf_life_freezer_days": 360,
+        "is_ethylene_producer": False,
+        "is_ethylene_sensitive": True,
+        "optimal_temp_min": 0.0,
+        "optimal_temp_max": 2.0,
+        "ripeness_indicator": "Firm, bright orange, crisp. Limp, rubbery, or sprouting = old.",
+        "storage_tips": "Store in the fridge crisper in a sealed bag with a damp paper towel. Remove green tops before storing — they draw moisture from the root.",
+    },
 ]
 
 

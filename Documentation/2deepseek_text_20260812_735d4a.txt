@@ -1,0 +1,36 @@
+Input Image
+    │
+    ▼
+Model 1: MobileNetV2 CNN
+    │
+    ▼
+Class Label + Confidence
+(e.g., "Banana (5-10)", 0.91)
+    │
+    ▼
+Model 2: Freshness Mapper
+    │
+    ▼
+Freshness Score
+(e.g., 0.72)
+    │
+    ▼
+Database Lookup
+    │
+    ▼
+Fruit Reference Data
+(Base shelf life, optimal temperature range, ethylene flags, storage tips)
+    │
+    ▼
+Model 3: Shelf-Life Estimator
+    │
+    ▼
+Estimated Days Remaining
+(Room temperature: 2.2 days, Refrigerator: 3.0 days, Freezer: 29.6 days)
+    │
+    ▼
+Decision Engine
+    │
+    ▼
+Final Result
+(Status, days remaining, recommended storage, recommendation string, ethylene advisory)
