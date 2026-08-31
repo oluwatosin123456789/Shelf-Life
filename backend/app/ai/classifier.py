@@ -121,10 +121,15 @@ async def classify_fruit(image_path: str) -> dict:
     confidence = float(preds[0][idx])
     class_name = CLASS_NAMES[idx]
 
+    # Freshness is derived from the predicted class's stage (e.g. Tomato(1-5)
+    # vs Tomato(10-15)), so different ripeness stages yield different results.
+    freshness_score = _FRESHNESS[class_name]
+    freshness_label = get_freshness_label(freshness_score)
+
     return {
         "name": _parse_fruit_name(class_name),
         "confidence": round(confidence, 4),
-        "freshness_score": _DEMO_FRESHNESS_SCORE,
-        "freshness_label": _DEMO_FRESHNESS_LABEL,
+        "freshness_score": freshness_score,
+        "freshness_label": freshness_label,
         "expired": False,
     }
