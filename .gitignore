@@ -42,6 +42,10 @@ backend/uploads/
 Thumbs.db
 ~$*
 
+# --- Database ---
+*.db
+*.sqlite3
+
 # --- Supabase ---
 supabase/.temp/
 
